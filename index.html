@@ -79,15 +79,17 @@ dialog::backdrop{background:#0a0620aa}
 <div id="toast" role="status"></div>
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import{getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import{getAuth,GoogleAuthProvider,OAuthProvider,signInWithPopup,signOut,onAuthStateChanged,createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import{getFirestore,doc,collection,addDoc,deleteDoc,onSnapshot,getDocs,query,where,runTransaction,serverTimestamp}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 /* ====== HIER DEINE FIREBASE-DATEN EINTRAGEN ====== */
 const firebaseConfig={
-  apiKey:"DEIN_API_KEY",
-  authDomain:"DEIN-PROJEKT.firebaseapp.com",
-  projectId:"DEIN-PROJEKT",
-  appId:"DEINE_APP_ID"
+  apiKey:"AIzaSyCvH6WvR2KQR6IHcYBHCHECDEVvOyfSXMM",
+  authDomain:"wunschliste-4e66d.firebaseapp.com",
+  projectId:"wunschliste-4e66d",
+  storageBucket:"wunschliste-4e66d.firebasestorage.app",
+  messagingSenderId:"443503462360",
+  appId:"1:443503462360:web:52276890a5c1efb88554ad"
 };
 /* ================================================= */
 
@@ -105,7 +107,7 @@ let user=null,unsubs=[],F={sort:"score",type:"all",free:false,q:""};
 
 function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),2600)}
 function clear(){unsubs.forEach(u=>u());unsubs=[]}
-function top(){return`<div class="top"><a href="#/"><b>🎟️ Die Gutscheinseite</b></a><div class="row">${user?`<span class="mut">${esc(user.displayName||"")}</span><button class="ghost" data-a="out">Abmelden</button>`:`<button class="ghost" data-a="in">Mit Google anmelden</button>`}</div></div>`}
+function top(){return`<div class="top"><a href="#/"><b>🎟️ Die Gutscheinseite</b></a><div class="row">${user?`<span class="mut">${esc(user.displayName||user.email||"")}</span><button class="ghost" data-a="out">Abmelden</button>`:`<button class="ghost" data-a="in">Anmelden</button>`}</div></div>`}
 function setup(){return configured?"":`<div class="note"><b>Firebase fehlt noch.</b> Trage oben in der index.html deine Firebase-Daten ein, dann läuft alles.</div>`}
 
 async function route(){
@@ -119,7 +121,7 @@ async function route(){
 
 async function home(){
   app.innerHTML=top()+setup()+(user?`<div class="row" style="justify-content:space-between;margin:1rem 0"><h2>Deine Listen</h2><button data-a="new">Neue Liste</button></div><div class="grid" id="mine"><p class="mut">Lädt …</p></div>`:
-  `<div class="hero"><h1>Wünsche sammeln. Gemeinsam schenken.</h1><p>Lege eine Liste an, wähle den Anlass, füge Artikel und Gutscheine hinzu und teile den Link. Wer schenkt, braucht kein Konto.</p><button data-a="in">Mit Google starten</button></div>`);
+  `<div class="hero"><h1>Wünsche sammeln. Gemeinsam schenken.</h1><p>Lege eine Liste an, wähle den Anlass, füge Artikel und Gutscheine hinzu und teile den Link. Wer schenkt, braucht kein Konto.</p><button data-a="in">Anmelden und starten</button></div>`);
   if(!user||!configured)return;
   const s=await getDocs(query(collection(db,"lists"),where("owner","==",user.uid)));
   const el=$("#mine");if(!el)return;
@@ -198,6 +200,29 @@ function askBuy(i){
   };
 }
 
+function authMsg(c){return({"auth/invalid-credential":"E-Mail oder Passwort stimmt nicht.","auth/email-already-in-use":"Diese E-Mail hat schon ein Konto.","auth/weak-password":"Das Passwort ist zu kurz (mindestens 6 Zeichen).","auth/invalid-email":"Die E-Mail-Adresse ist ungültig.","auth/operation-not-allowed":"Diese Anmeldung ist in Firebase noch nicht aktiviert.","auth/unauthorized-domain":"Diese Domain ist in Firebase nicht freigegeben."})[c]||"Anmeldung nicht möglich."}
+
+async function provLogin(p){
+  try{await signInWithPopup(auth,p==="apple"?new OAuthProvider("apple.com"):new GoogleAuthProvider());dlg.close()}
+  catch(x){if(x.code!=="auth/popup-closed-by-user")toast(authMsg(x.code))}
+}
+
+function loginDlg(){
+  if(!configured){toast("Firebase ist noch nicht eingerichtet.");return}
+  dlg.innerHTML=`<h2>Anmelden</h2>
+  <div class="row" style="flex-direction:column;align-items:stretch;margin-top:.8rem"><button data-a="prov" data-v="google">Mit Google fortfahren</button><button data-a="prov" data-v="apple" style="background:#000;color:#fff">Mit Apple fortfahren</button></div>
+  <p class="mut" style="text-align:center;margin:.9rem 0 0">oder mit E-Mail</p>
+  <form id="lf"><label for="em">E-Mail</label><input id="em" type="email" required autocomplete="email">
+  <label for="pw">Passwort</label><input id="pw" type="password" required minlength="6" autocomplete="current-password">
+  <div class="row" style="margin-top:1rem"><button type="submit" data-m="in">Anmelden</button><button type="submit" class="ghost" data-m="up">Konto erstellen</button></div></form>
+  <div class="row" style="margin-top:.8rem"><button type="button" class="ghost" data-a="reset">Passwort vergessen?</button><button type="button" class="ghost" data-a="close">Abbrechen</button></div>`;
+  dlg.showModal();
+  $("#lf").onsubmit=async e=>{e.preventDefault();
+    const em=$("#em").value.trim(),pw=$("#pw").value;
+    try{if(e.submitter?.dataset.m==="up")await createUserWithEmailAndPassword(auth,em,pw);else await signInWithEmailAndPassword(auth,em,pw);dlg.close()}
+    catch(x){toast(authMsg(x.code))}};
+}
+
 function addDlg(){
   dlg.innerHTML=`<h2>Eintrag hinzufügen</h2><form id="af"><label for="ty">Art</label><select id="ty"><option value="item">Artikel</option><option value="gift">Gutschein</option></select>
   <label for="nm">Name</label><input id="nm" required maxlength="80">
@@ -220,7 +245,9 @@ function addDlg(){
 document.addEventListener("click",async e=>{
   const b=e.target.closest("[data-a]");if(!b)return;
   const a=b.dataset.a,it=app._items?.find(x=>x.id===b.dataset.id);
-  if(a==="in"){try{await signInWithPopup(auth,new GoogleAuthProvider())}catch{toast("Anmeldung nicht möglich. Ist Firebase eingerichtet?")}}
+  if(a==="in")loginDlg();
+  else if(a==="prov")provLogin(b.dataset.v);
+  else if(a==="reset"){const em=$("#em")?.value.trim();if(!em){toast("Gib oben deine E-Mail ein.");return}try{await sendPasswordResetEmail(auth,em)}catch{}toast("Wenn es ein Konto gibt, ist eine E-Mail unterwegs.")}
   else if(a==="out"){await signOut(auth);location.hash="#/"}
   else if(a==="new")location.hash="#/neu";
   else if(a==="close")dlg.close();
