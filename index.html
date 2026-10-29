@@ -10,7 +10,7 @@
 :root{--bg:#f1efff;--card:#fff;--tx:#17143a;--mut:#6a6788;--bd:#dcd8f5;--ac:#6c4dff;--ac2:#ff6fae;--on:#fff;--ok:#12805c}
 @media(prefers-color-scheme:dark){:root{--bg:#100e24;--card:#1b1838;--tx:#f2f0ff;--mut:#a29fc4;--bd:#2f2b57;--ok:#4cd6a0}}
 [data-t=geburtstag]{--ac:#f26b1d;--ac2:#ffc02e}
-[data-t=weihnachten]{--ac:#c8283c;--ac2:#1f9a58}
+[data-t=weihnachten]{--ac:#c8283c;--ac2:#e2b653;--bg:#0f2a21;--card:#173a2d;--tx:#f3f1ea;--mut:#9fc2b1;--bd:#2b5644}
 [data-t=hochzeit]{--ac:#b8749f;--ac2:#f0c9dc}
 [data-t=sonstiges]{--ac:#6c4dff;--ac2:#ff6fae}
 *{box-sizing:border-box}
@@ -63,13 +63,26 @@ label{display:block;font-weight:700;font-size:.9rem;margin:.8rem 0 .25rem}
 .tk.done .im{filter:grayscale(1)}
 .flag{align-self:flex-start;background:var(--ok);color:#fff;font-weight:700;border-radius:8px;padding:.15rem .6rem;font-size:.85rem}
 .x{position:absolute;top:.5rem;right:.6rem;background:#0008;color:#fff;border-radius:99px;padding:.2rem .6rem;z-index:2}
-dialog{border:0;border-radius:20px;padding:1.4rem;max-width:min(92vw,420px);background:var(--card);color:var(--tx);box-shadow:0 20px 60px #0006}
+dialog{border:0;border-radius:20px;padding:1.4rem;width:min(92vw,540px);max-height:90vh;overflow:auto;background:var(--card);color:var(--tx);box-shadow:0 20px 60px #0006}
 dialog::backdrop{background:#0a0620aa}
 .warn{background:color-mix(in srgb,var(--ac2) 22%,transparent);border-radius:10px;padding:.6rem .8rem;margin:.8rem 0;font-size:.95rem}
 .note{background:var(--card);border:1.5px dashed var(--ac);border-radius:14px;padding:1rem;margin:1rem 0}
 .empty{text-align:center;padding:2.5rem 1rem;color:var(--mut)}
 #toast{position:fixed;left:50%;bottom:calc(1.2rem + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:.7rem 1.1rem;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .2s}
 #toast.on{opacity:1}
+[hidden]{display:none!important}
+body[data-t=weihnachten]{background-image:radial-gradient(circle,#ffffff2b 1.6px,#0000 2.2px),radial-gradient(circle,#ffffff1c 1px,#0000 1.6px);background-size:150px 150px,97px 97px;background-position:0 0,50px 40px}
+body[data-t=weihnachten]::before{content:"";position:fixed;inset:0 0 auto;height:4px;background:linear-gradient(90deg,var(--ac),var(--ac2));z-index:5}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.tabs{display:flex;gap:.3rem;background:var(--bg);padding:.25rem;border-radius:12px;margin-bottom:.4rem}
+.tabs button{flex:1;background:transparent;color:var(--mut);padding:.55rem}
+.tabs button.on{background:var(--card);color:var(--tx);box-shadow:0 1px 4px #0003}
+.lnk{background:none;color:var(--ac);padding:.3rem 0;font-weight:500;font-size:.9rem}
+.prov{display:grid;gap:.5rem}
+.pv{display:flex;align-items:center;justify-content:center;gap:.7rem;background:var(--card);color:var(--tx);border:1.5px solid var(--bd)}
+.pv svg{width:20px;height:20px;flex:none}
+#pimg{display:none;width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-top:.5rem}
+input[type=file]{padding:.5rem}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -79,7 +92,7 @@ dialog::backdrop{background:#0a0620aa}
 <div id="toast" role="status"></div>
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import{getAuth,GoogleAuthProvider,OAuthProvider,signInWithPopup,signOut,onAuthStateChanged,createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import{getAuth,GoogleAuthProvider,OAuthProvider,GithubAuthProvider,signInWithPopup,signOut,onAuthStateChanged,createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import{getFirestore,doc,collection,addDoc,deleteDoc,onSnapshot,getDocs,query,where,runTransaction,serverTimestamp}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 /* ====== HIER DEINE FIREBASE-DATEN EINTRAGEN ====== */
@@ -100,6 +113,7 @@ if(configured){const a=initializeApp(firebaseConfig);auth=getAuth(a);db=getFires
 const OCC={geburtstag:["🎂","Geburtstag"],weihnachten:["🎄","Weihnachten"],hochzeit:["💍","Hochzeit"],sonstiges:["🎁","Sonstiges"]};
 const eur=n=>new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR"}).format(n||0);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const imgSrc=u=>/^(https?:\/\/|data:image\/(jpeg|png|webp);base64,)/i.test(u||"")?u:"";
 const url=u=>/^https?:\/\//i.test(u||"")?u:"";
 const $=s=>document.querySelector(s);
 const app=$("#app"),dlg=$("#dlg");
@@ -123,10 +137,10 @@ async function home(){
   app.innerHTML=top()+setup()+(user?`<div class="row" style="justify-content:space-between;margin:1rem 0"><h2>Deine Listen</h2><button data-a="new">Neue Liste</button></div><div class="grid" id="mine"><p class="mut">Lädt …</p></div>`:
   `<div class="hero"><h1>Wünsche sammeln. Gemeinsam schenken.</h1><p>Lege eine Liste an, wähle den Anlass, füge Artikel und Gutscheine hinzu und teile den Link. Wer schenkt, braucht kein Konto.</p><button data-a="in">Anmelden und starten</button></div>`);
   if(!user||!configured)return;
-  const s=await getDocs(query(collection(db,"lists"),where("owner","==",user.uid)));
+  unsubs.push(onSnapshot(query(collection(db,"lists"),where("owner","==",user.uid)),s=>{
   const el=$("#mine");if(!el)return;
   el.innerHTML=s.empty?`<div class="empty">Noch keine Liste. Leg gleich deine erste an.</div>`:
-   s.docs.map(d=>{const l=d.data(),o=OCC[l.occ]||OCC.sonstiges;return`<a href="#/l/${d.id}" data-t="${esc(l.occ)}" style="text-decoration:none;color:#fff"><div class="lh" style="margin:0"><div style="font-size:2rem">${o[0]}</div><h2>${esc(l.title)}</h2><p>${o[1]}</p></div></a>`}).join("");
+   s.docs.map(d=>{const l=d.data(),o=OCC[l.occ]||OCC.sonstiges;return`<a href="#/l/${d.id}" data-t="${esc(l.occ)}" style="text-decoration:none;color:#fff"><div class="lh" style="margin:0"><div style="font-size:2rem">${o[0]}</div><h2>${esc(l.title)}</h2><p>${o[1]}</p></div></a>`}).join("")}));
 }
 
 function newView(){
@@ -151,7 +165,7 @@ function listView(id){
     const open=items.filter(i=>i.type==="item"&&!isDone(i)).reduce((s,i)=>s+i.price*(i.qty-i.bought),0);
     const gOpen=items.filter(i=>i.type==="gift").reduce((s,i)=>s+Math.max(0,i.goal-i.collected),0);
     const keep=document.activeElement?.id==="q";
-    app.innerHTML=top()+`<div class="lh"><div style="font-size:2rem">${o[0]}</div><h1>${esc(L.title)}</h1><p>Noch offen: ${eur(open+gOpen)}</p><div class="row" style="margin-top:.9rem"><button data-a="share">Link teilen</button>${own?`<button data-a="add">Eintrag hinzufügen</button>`:""}</div></div>
+    app.innerHTML=top()+`<div class="lh"><div style="font-size:2rem">${o[0]}</div><h1>${esc(L.title)}</h1><p>Noch offen: ${eur(open+gOpen)}</p><div class="row" style="margin-top:.9rem"><button data-a="share">Link teilen</button>${own?`<button data-a="add">Eintrag hinzufügen</button><button data-a="dellist" style="background:#ffffff33;color:#fff">Liste löschen</button>`:""}</div></div>
     <div class="bar"><input id="q" type="search" placeholder="Suchen …" value="${esc(F.q)}" aria-label="Suchen">
     <select id="s" aria-label="Sortieren"><option value="score">Wichtigste zuerst</option><option value="pa">Preis aufsteigend</option><option value="pd">Preis absteigend</option><option value="new">Neueste zuerst</option></select>
     ${[["all","Alle"],["item","Artikel"],["gift","Gutscheine"]].map(([k,n])=>`<button class="chip ${F.type===k?"on":""}" data-a="type" data-v="${k}">${n}</button>`).join("")}
@@ -170,7 +184,7 @@ const val=i=>i.type==="gift"?i.goal:i.price;
 
 function card(i,own){
   const gift=i.type==="gift",done=isDone(i),pct=gift?Math.min(100,i.collected/i.goal*100):(i.bought/i.qty*100);
-  const img=url(i.img);
+  const img=imgSrc(i.img);
   return`<article class="tk ${done?"done":""}">${own?`<button class="x" data-a="del" data-id="${i.id}" aria-label="Löschen">✕</button>`:""}
   <div class="im" ${img?`style="background-image:url('${esc(img)}')"`:""}>${img?"":(gift?"🎟️":"🎁")}</div>
   <div class="bd">${done?`<span class="flag">${gift?"Ausverkauft":"Schon gekauft"}</span>`:""}
@@ -200,43 +214,66 @@ function askBuy(i){
   };
 }
 
-function authMsg(c){return({"auth/invalid-credential":"E-Mail oder Passwort stimmt nicht.","auth/email-already-in-use":"Diese E-Mail hat schon ein Konto.","auth/weak-password":"Das Passwort ist zu kurz (mindestens 6 Zeichen).","auth/invalid-email":"Die E-Mail-Adresse ist ungültig.","auth/operation-not-allowed":"Diese Anmeldung ist in Firebase noch nicht aktiviert.","auth/unauthorized-domain":"Diese Domain ist in Firebase nicht freigegeben."})[c]||"Anmeldung nicht möglich."}
+function authMsg(c){return({"auth/invalid-credential":"E-Mail oder Passwort stimmt nicht.","auth/email-already-in-use":"Diese E-Mail hat schon ein Konto.","auth/weak-password":"Das Passwort ist zu kurz (mindestens 6 Zeichen).","auth/invalid-email":"Die E-Mail-Adresse ist ungültig.","auth/operation-not-allowed":"Diese Anmeldung ist in Firebase noch nicht aktiviert.","auth/unauthorized-domain":"Diese Domain ist in Firebase nicht freigegeben.","auth/popup-blocked":"Das Popup wurde blockiert. Bitte erlaube Popups.","auth/account-exists-with-different-credential":"Für diese E-Mail gibt es schon ein Konto mit einer anderen Anmeldeart."})[c]||"Anmeldung nicht möglich."}
 
 async function provLogin(p){
-  try{await signInWithPopup(auth,p==="apple"?new OAuthProvider("apple.com"):new GoogleAuthProvider());dlg.close()}
-  catch(x){if(x.code!=="auth/popup-closed-by-user")toast(authMsg(x.code))}
+  const pr=p==="github"?new GithubAuthProvider():p==="microsoft"?new OAuthProvider("microsoft.com"):new GoogleAuthProvider();
+  try{await signInWithPopup(auth,pr);dlg.close()}
+  catch(x){if(x.code!=="auth/popup-closed-by-user"&&x.code!=="auth/cancelled-popup-request")toast(authMsg(x.code))}
 }
 
-function loginDlg(){
+const LOGO={
+google:'<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>',
+microsoft:'<svg viewBox="0 0 23 23" aria-hidden="true"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>',
+github:'<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>'};
+
+function loginDlg(mode="in"){
   if(!configured){toast("Firebase ist noch nicht eingerichtet.");return}
-  dlg.innerHTML=`<h2>Anmelden</h2>
-  <div class="row" style="flex-direction:column;align-items:stretch;margin-top:.8rem"><button data-a="prov" data-v="google">Mit Google fortfahren</button><button data-a="prov" data-v="apple" style="background:#000;color:#fff">Mit Apple fortfahren</button></div>
-  <p class="mut" style="text-align:center;margin:.9rem 0 0">oder mit E-Mail</p>
+  const up=mode==="up";
+  dlg.innerHTML=`<div class="tabs"><button type="button" class="${up?"":"on"}" data-a="tab" data-v="in">Anmelden</button><button type="button" class="${up?"on":""}" data-a="tab" data-v="up">Account erstellen</button></div>
   <form id="lf"><label for="em">E-Mail</label><input id="em" type="email" required autocomplete="email">
-  <label for="pw">Passwort</label><input id="pw" type="password" required minlength="6" autocomplete="current-password">
-  <div class="row" style="margin-top:1rem"><button type="submit" data-m="in">Anmelden</button><button type="submit" class="ghost" data-m="up">Konto erstellen</button></div></form>
-  <div class="row" style="margin-top:.8rem"><button type="button" class="ghost" data-a="reset">Passwort vergessen?</button><button type="button" class="ghost" data-a="close">Abbrechen</button></div>`;
-  dlg.showModal();
+  <label for="pw">Passwort</label><input id="pw" type="password" required minlength="6" autocomplete="${up?"new-password":"current-password"}">
+  ${up?"":`<button type="button" class="lnk" data-a="reset">Passwort vergessen?</button>`}
+  <button type="submit" style="width:100%;margin-top:1rem">${up?"Account erstellen":"Anmelden"}</button></form>
+  <p class="mut" style="text-align:center;margin:1.1rem 0 .6rem">oder weiter mit</p>
+  <div class="prov">${[["google","Google"],["microsoft","Microsoft"],["github","GitHub"]].map(([k,n])=>`<button type="button" class="pv" data-a="prov" data-v="${k}">${LOGO[k]}${n}</button>`).join("")}</div>
+  <div class="row" style="justify-content:center;margin-top:.6rem"><button type="button" class="lnk" data-a="close">Abbrechen</button></div>`;
+  if(!dlg.open)dlg.showModal();
   $("#lf").onsubmit=async e=>{e.preventDefault();
     const em=$("#em").value.trim(),pw=$("#pw").value;
-    try{if(e.submitter?.dataset.m==="up")await createUserWithEmailAndPassword(auth,em,pw);else await signInWithEmailAndPassword(auth,em,pw);dlg.close()}
+    try{if(up)await createUserWithEmailAndPassword(auth,em,pw);else await signInWithEmailAndPassword(auth,em,pw);dlg.close()}
     catch(x){toast(authMsg(x.code))}};
 }
+
+function shrink(file,max=640){return new Promise((res,rej)=>{
+  const im=new Image(),u=URL.createObjectURL(file);
+  im.onerror=()=>{URL.revokeObjectURL(u);rej()};
+  im.onload=()=>{URL.revokeObjectURL(u);
+    let s=Math.min(1,max/Math.max(im.width,im.height)),q=.75,out="";
+    const c=document.createElement("canvas"),x=c.getContext("2d");
+    for(let n=0;n<6;n++){c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));
+      x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
+      out=c.toDataURL("image/jpeg",q);if(out.length<140000)break;s*=.8;q=Math.max(.5,q-.08)}
+    out.length<300000?res(out):rej()};
+  im.src=u})}
 
 function addDlg(){
   dlg.innerHTML=`<h2>Eintrag hinzufügen</h2><form id="af"><label for="ty">Art</label><select id="ty"><option value="item">Artikel</option><option value="gift">Gutschein</option></select>
   <label for="nm">Name</label><input id="nm" required maxlength="80">
-  <label for="lk">Link (optional)</label><input id="lk" type="url" placeholder="https://…">
-  <label for="im">Bild-Link (optional)</label><input id="im" type="url" placeholder="https://…">
-  <div id="f1"><label for="pr">Preis in Euro</label><input id="pr" type="number" min="0" step="0.01" value="0">
-  <label for="qt">Wie oft darf er gekauft werden?</label><input id="qt" type="number" min="1" max="99" value="1"></div>
+  <label for="lk">Link zum Shop (optional)</label><input id="lk" type="url" placeholder="https://…">
+  <label for="fi">Bild hochladen (optional)</label><input id="fi" type="file" accept="image/*"><img id="pimg" alt="Vorschau">
+  <div id="f1" class="two"><div><label for="pr">Preis in Euro</label><input id="pr" type="number" min="0" step="0.01" value="0"></div>
+  <div><label for="qt">Wie oft kaufbar?</label><input id="qt" type="number" min="1" max="99" value="1"></div></div>
   <div id="f2" hidden><label for="gl">Gesamtbetrag, den du haben möchtest (Euro)</label><input id="gl" type="number" min="1" step="1" value="50"></div>
   <label for="sc">Wichtigkeit (1 bis 5)</label><input id="sc" type="range" min="1" max="5" value="3">
   <div class="row" style="justify-content:flex-end;margin-top:1rem"><button type="button" class="ghost" data-a="close">Abbrechen</button><button type="submit">Speichern</button></div></form>`;
   dlg.showModal();
+  let imgData="";
+  $("#fi").onchange=async e=>{const f=e.target.files[0];imgData="";$("#pimg").style.display="none";if(!f)return;
+    try{imgData=await shrink(f);const p=$("#pimg");p.src=imgData;p.style.display="block"}catch{toast("Das Bild konnte nicht verarbeitet werden.");e.target.value=""}};
   $("#ty").onchange=e=>{$("#f1").hidden=e.target.value==="gift";$("#f2").hidden=e.target.value!=="gift"};
   $("#af").onsubmit=async e=>{e.preventDefault();const g=$("#ty").value==="gift";
-    await addDoc(collection(db,"lists",app._lid,"items"),{type:g?"gift":"item",name:$("#nm").value.trim(),link:$("#lk").value,img:$("#im").value,
+    await addDoc(collection(db,"lists",app._lid,"items"),{type:g?"gift":"item",name:$("#nm").value.trim(),link:$("#lk").value,img:imgData,
       price:g?0:Number($("#pr").value)||0,qty:g?1:Math.max(1,Math.floor($("#qt").value)||1),bought:0,
       goal:g?Math.max(1,Math.round($("#gl").value)):0,collected:0,score:Number($("#sc").value),created:serverTimestamp()});
     dlg.close();toast("Eintrag gespeichert.")};
@@ -246,8 +283,10 @@ document.addEventListener("click",async e=>{
   const b=e.target.closest("[data-a]");if(!b)return;
   const a=b.dataset.a,it=app._items?.find(x=>x.id===b.dataset.id);
   if(a==="in")loginDlg();
+  else if(a==="tab")loginDlg(b.dataset.v);
   else if(a==="prov")provLogin(b.dataset.v);
   else if(a==="reset"){const em=$("#em")?.value.trim();if(!em){toast("Gib oben deine E-Mail ein.");return}try{await sendPasswordResetEmail(auth,em)}catch{}toast("Wenn es ein Konto gibt, ist eine E-Mail unterwegs.")}
+  else if(a==="dellist"&&confirm("Die ganze Liste mit allen Einträgen löschen?")){const id=app._lid,q=await getDocs(collection(db,"lists",id,"items"));await Promise.all(q.docs.map(d=>deleteDoc(d.ref)));await deleteDoc(doc(db,"lists",id));location.hash="#/"}
   else if(a==="out"){await signOut(auth);location.hash="#/"}
   else if(a==="new")location.hash="#/neu";
   else if(a==="close")dlg.close();
