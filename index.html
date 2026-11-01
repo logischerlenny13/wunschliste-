@@ -17,12 +17,12 @@
 body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 Figtree,system-ui,sans-serif;padding-top:env(safe-area-inset-top)}
 h1,h2,h3{font-family:"Bricolage Grotesque",Figtree,sans-serif;line-height:1.1;margin:0}
 a{color:var(--ac)}
-button,input,select{font:inherit;color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;border:0;border-radius:12px;padding:.65rem 1.1rem;background:var(--ac);color:var(--on);font-weight:700}
 button.ghost{background:transparent;color:var(--tx);border:1.5px solid var(--bd)}
 button:disabled{background:var(--bd);color:var(--mut);cursor:not-allowed}
 :focus-visible{outline:3px solid var(--ac2);outline-offset:2px}
-input,select{width:100%;padding:.65rem .8rem;border-radius:10px;border:1.5px solid var(--bd);background:var(--card)}
+input,select,textarea{width:100%;padding:.65rem .8rem;border-radius:10px;border:1.5px solid var(--bd);background:var(--card)}
 label{display:block;font-weight:700;font-size:.9rem;margin:.8rem 0 .25rem}
 .wrap{max-width:960px;margin:0 auto;padding:1rem 1rem 4rem}
 .top{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.5rem 0 1rem}
@@ -71,8 +71,8 @@ dialog::backdrop{background:#0a0620aa}
 #toast{position:fixed;left:50%;bottom:calc(1.2rem + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:.7rem 1.1rem;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .2s}
 #toast.on{opacity:1}
 [hidden]{display:none!important}
-body[data-t=weihnachten]{background-image:radial-gradient(circle,#ffffff2b 1.6px,#0000 2.2px),radial-gradient(circle,#ffffff1c 1px,#0000 1.6px);background-size:150px 150px,97px 97px;background-position:0 0,50px 40px}
-body[data-t=weihnachten]::before{content:"";position:fixed;inset:0 0 auto;height:4px;background:linear-gradient(90deg,var(--ac),var(--ac2));z-index:5}
+body:not([data-t]),body[data-t=weihnachten]{background-image:radial-gradient(circle,#ffffff2b 1.6px,#0000 2.2px),radial-gradient(circle,#ffffff1c 1px,#0000 1.6px);background-size:150px 150px,97px 97px;background-position:0 0,50px 40px}
+body:not([data-t])::before,body[data-t=weihnachten]::before{content:"";position:fixed;inset:0 0 auto;height:4px;background:linear-gradient(90deg,var(--ac),var(--ac2));z-index:5}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
 .tabs{display:flex;gap:.3rem;background:var(--bg);padding:.25rem;border-radius:12px;margin-bottom:.4rem}
 .tabs button{flex:1;background:transparent;color:var(--mut);padding:.55rem}
@@ -83,6 +83,43 @@ body[data-t=weihnachten]::before{content:"";position:fixed;inset:0 0 auto;height
 .pv svg{width:20px;height:20px;flex:none}
 #pimg{display:none;width:100%;max-height:180px;object-fit:cover;border-radius:12px;margin-top:.5rem}
 input[type=file]{padding:.5rem}
+body:not([data-t]){--bg:#12102a;--card:#1b1838;--tx:#f2f0ff;--mut:#a29fc4;--bd:#2f2b57;--ac:#8b6bff;--ac2:#ff7ab6}
+article.tk{cursor:pointer}
+.tt{background:none;color:inherit;padding:0;font:inherit;text-align:left;border-radius:6px}
+dialog.wide{width:min(94vw,720px)}
+.dimg{aspect-ratio:16/10;border-radius:14px;background:linear-gradient(135deg,var(--ac),var(--ac2)) center/cover;display:grid;place-items:center;font-size:4rem}
+.desc{white-space:pre-wrap;margin:.6rem 0;line-height:1.6}
+.amts{display:flex;flex-wrap:wrap;gap:.5rem}
+.amt{margin:0;position:relative}
+.amt input{position:absolute;opacity:0;width:1px}
+.amt span{display:block;border:2px solid var(--bd);border-radius:12px;padding:.55rem 1rem;cursor:pointer;font-weight:700}
+.amt input:checked+span{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 20%,transparent)}
+.amt input:focus-visible+span{outline:3px solid var(--ac2)}
+.hero2{display:grid;grid-template-columns:1.1fr .9fr;gap:2rem;align-items:center;padding:2rem 0 1rem}
+.hero2 h1{font-size:clamp(2.6rem,8vw,4.8rem);font-weight:800}
+.hero2 p{color:var(--mut);font-size:1.15rem;max-width:30em;margin:1rem 0 1.6rem}
+.hero2 button{padding:.85rem 1.6rem;font-size:1.05rem}
+.stack{position:relative;min-height:390px}
+.stack .tk{position:absolute;width:min(240px,58%);cursor:default}
+.stack .s1{left:2%;top:50px;transform:rotate(-7deg)}
+.stack .s2{right:2%;top:0;transform:rotate(5deg)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1.4rem;margin-top:2.5rem}
+.facts div{border-top:2px solid var(--ac);padding-top:.8rem;color:var(--mut)}
+.facts b{display:block;color:var(--tx);font-family:"Bricolage Grotesque",sans-serif;font-size:1.15rem;margin-bottom:.2rem}
+@media(max-width:760px){.hero2{grid-template-columns:1fr}.stack{min-height:350px}}
+.back{display:grid;place-items:center;width:38px;height:38px;border-radius:99px;border:1.5px solid var(--bd);text-decoration:none;color:var(--tx);font-size:1.2rem}
+.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:0}
+.xs{position:absolute;top:.5rem;right:.6rem;display:flex;gap:.3rem;z-index:2}
+.xs button{background:#000a;color:#fff;border-radius:99px;padding:.2rem .6rem}
+#nudge{position:fixed;right:1rem;bottom:calc(1rem + env(safe-area-inset-bottom));display:flex;gap:.5rem;align-items:center;background:var(--card);border:1.5px solid var(--bd);border-radius:14px;padding:.5rem .6rem .5rem .9rem;font-size:.85rem;box-shadow:0 8px 24px #0004;z-index:20;animation:pop .4s 2s both}
+#nudge button{padding:.4rem .8rem;font-size:.85rem}
+#nudge .nx{background:none;color:var(--mut);padding:.3rem .5rem}
+@keyframes pop{from{opacity:0;transform:translateY(12px)}}
+.rows{display:grid;gap:.6rem}
+.rw{display:flex;justify-content:space-between;align-items:center;gap:.8rem;flex-wrap:wrap;background:var(--card);border:1.5px solid var(--bd);border-radius:14px;padding:.7rem .9rem}
+.rw .th{width:52px;height:52px;border-radius:10px;background:var(--bd) center/cover;flex:none}
+.rw button,.btn{padding:.45rem .8rem;font-size:.9rem}
+.btn{display:inline-block;text-decoration:none;border-radius:12px;background:var(--ac);color:var(--on);font-weight:700}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -93,7 +130,7 @@ input[type=file]{padding:.5rem}
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import{getAuth,GoogleAuthProvider,OAuthProvider,GithubAuthProvider,signInWithPopup,signOut,onAuthStateChanged,createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
-import{getFirestore,doc,collection,addDoc,deleteDoc,onSnapshot,getDocs,query,where,runTransaction,serverTimestamp}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import{getFirestore,doc,collection,addDoc,deleteDoc,onSnapshot,getDocs,getDoc,updateDoc,collectionGroup,query,where,runTransaction,serverTimestamp}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
 /* ====== HIER DEINE FIREBASE-DATEN EINTRAGEN ====== */
 const firebaseConfig={
@@ -117,17 +154,20 @@ const imgSrc=u=>/^(https?:\/\/|data:image\/(jpeg|png|webp);base64,)/i.test(u||""
 const url=u=>/^https?:\/\//i.test(u||"")?u:"";
 const $=s=>document.querySelector(s);
 const app=$("#app"),dlg=$("#dlg");
-let user=null,unsubs=[],F={sort:"score",type:"all",free:false,q:""};
+dlg.addEventListener("close",()=>{dlg.className=""});
+let user=null,isAdm=false,nudgeOff=false,unsubs=[],F={sort:"score",type:"all",free:false,q:""};
 
 function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),2600)}
 function clear(){unsubs.forEach(u=>u());unsubs=[]}
-function top(){return`<div class="top"><a href="#/"><b>🎟️ Die Gutscheinseite</b></a><div class="row">${user?`<span class="mut">${esc(user.displayName||user.email||"")}</span><button class="ghost" data-a="out">Abmelden</button>`:`<button class="ghost" data-a="in">Anmelden</button>`}</div></div>`}
+function top(back){return`<div class="top"><div class="row">${back&&user?`<a class="back" href="#/" aria-label="Zurück zu meinen Wunschlisten">←</a>`:""}<a href="#/"><b>🎟️ Die Gutscheinseite</b></a></div><div class="row">${isAdm?`<a href="#/admin">Admin</a>`:""}${user?`<span class="mut">${esc(user.displayName||user.email||"")}</span><button class="ghost" data-a="out">Abmelden</button>`:`<button class="ghost" data-a="in">Anmelden</button>`}</div></div>`}
 function setup(){return configured?"":`<div class="note"><b>Firebase fehlt noch.</b> Trage oben in der index.html deine Firebase-Daten ein, dann läuft alles.</div>`}
 
 async function route(){
   clear();
   const h=location.hash.replace(/^#\/?/,"").split("/");
   document.body.removeAttribute("data-t");
+  nudge(false);
+  if(h[0]==="admin")return adminView();
   if(h[0]==="l"&&h[1])return listView(h[1]);
   if(h[0]==="neu")return newView();
   return home();
@@ -135,7 +175,10 @@ async function route(){
 
 async function home(){
   app.innerHTML=top()+setup()+(user?`<div class="row" style="justify-content:space-between;margin:1rem 0"><h2>Deine Listen</h2><button data-a="new">Neue Liste</button></div><div class="grid" id="mine"><p class="mut">Lädt …</p></div>`:
-  `<div class="hero"><h1>Wünsche sammeln. Gemeinsam schenken.</h1><p>Lege eine Liste an, wähle den Anlass, füge Artikel und Gutscheine hinzu und teile den Link. Wer schenkt, braucht kein Konto.</p><button data-a="in">Anmelden und starten</button></div>`);
+  `<div class="hero2"><div><h1>Wünsche sammeln. Gemeinsam schenken.</h1><p>Leg eine Liste für deinen Anlass an, füge Artikel und Gutscheine hinzu und teile den Link. Wer schenkt, braucht kein Konto.</p><button data-a="in">Anmelden und starten</button></div>
+  <div class="stack" aria-hidden="true"><article class="tk s1"><div class="im">🎧</div><div class="bd"><h3>Kopfhörer</h3><span class="st">★★★★★</span><div class="pr">89,00 €</div></div></article>
+  <article class="tk s2"><div class="im">🎟️</div><div class="bd"><h3>Konzert-Gutschein</h3><div class="pg"><i style="width:62%"></i></div><div class="mut">62 € von 100 €</div></div></article></div></div>
+  <div class="facts"><div><b>Liste anlegen</b>Anlass wählen, Wünsche mit Bild und Preis eintragen.</div><div><b>Link teilen</b>Alle sehen die Liste live, ganz ohne Konto.</div><div><b>Gemeinsam schenken</b>Gutscheine füllen sich Betrag für Betrag. Nichts wird doppelt gekauft.</div></div>`);
   if(!user||!configured)return;
   unsubs.push(onSnapshot(query(collection(db,"lists"),where("owner","==",user.uid)),s=>{
   const el=$("#mine");if(!el)return;
@@ -147,7 +190,7 @@ function newView(){
   if(!user){location.hash="#/";return}
   app.innerHTML=top()+`<h2>Neue Liste</h2><form id="nf"><label for="t">Name der Liste</label><input id="t" required maxlength="60" placeholder="z. B. Mein 30. Geburtstag"><label>Anlass</label><div class="occ">${Object.entries(OCC).map(([k,v],i)=>`<label><input type="radio" name="o" value="${k}" ${i?"":"checked"}><em>${v[0]}</em>${v[1]}</label>`).join("")}</div><p><button type="submit">Liste erstellen</button></p></form>`;
   $("#nf").onsubmit=async e=>{e.preventDefault();
-    const r=await addDoc(collection(db,"lists"),{title:$("#t").value.trim(),occ:new FormData(e.target).get("o"),owner:user.uid,created:serverTimestamp()});
+    const r=await addDoc(collection(db,"lists"),{title:$("#t").value.trim(),occ:new FormData(e.target).get("o"),owner:user.uid,reviewed:false,created:serverTimestamp()});
     location.hash="#/l/"+r.id};
 }
 
@@ -157,130 +200,157 @@ function listView(id){
   if(!configured)return;
   const paint=()=>{
     if(!L)return;
-    const own=user&&L.owner===user.uid,o=OCC[L.occ]||OCC.sonstiges;
+    const own=user&&(L.owner===user.uid||isAdm),o=OCC[L.occ]||OCC.sonstiges;
     document.body.setAttribute("data-t",L.occ);
     let v=items.filter(i=>(F.type==="all"||i.type===F.type)&&(!F.free||!isDone(i))&&i.name.toLowerCase().includes(F.q.toLowerCase()));
     const S={score:(a,b)=>b.score-a.score,pa:(a,b)=>val(a)-val(b),pd:(a,b)=>val(b)-val(a),new:(a,b)=>(b.created?.seconds||0)-(a.created?.seconds||0)};
     v.sort(S[F.sort]);
     const open=items.filter(i=>i.type==="item"&&!isDone(i)).reduce((s,i)=>s+i.price*(i.qty-i.bought),0);
-    const gOpen=items.filter(i=>i.type==="gift").reduce((s,i)=>s+Math.max(0,i.goal-i.collected),0);
+    const gOpen=items.filter(i=>i.type!=="item").reduce((s,i)=>s+Math.max(0,i.goal-i.collected),0);
     const keep=document.activeElement?.id==="q";
-    app.innerHTML=top()+`<div class="lh"><div style="font-size:2rem">${o[0]}</div><h1>${esc(L.title)}</h1><p>Noch offen: ${eur(open+gOpen)}</p><div class="row" style="margin-top:.9rem"><button data-a="share">Link teilen</button>${own?`<button data-a="add">Eintrag hinzufügen</button><button data-a="dellist" style="background:#ffffff33;color:#fff">Liste löschen</button>`:""}</div></div>
+    app.innerHTML=top(1)+`<div class="lh"><div style="font-size:2rem">${o[0]}</div><h1>${esc(L.title)}</h1><p>Noch offen: ${eur(open+gOpen)}</p><div class="row" style="margin-top:.9rem"><button data-a="share">Link teilen</button>${own?`<button data-a="add">Eintrag hinzufügen</button><button data-a="dellist" style="background:#ffffff33;color:#fff">Liste löschen</button>`:""}</div></div>
     <div class="bar"><input id="q" type="search" placeholder="Suchen …" value="${esc(F.q)}" aria-label="Suchen">
     <select id="s" aria-label="Sortieren"><option value="score">Wichtigste zuerst</option><option value="pa">Preis aufsteigend</option><option value="pd">Preis absteigend</option><option value="new">Neueste zuerst</option></select>
-    ${[["all","Alle"],["item","Artikel"],["gift","Gutscheine"]].map(([k,n])=>`<button class="chip ${F.type===k?"on":""}" data-a="type" data-v="${k}">${n}</button>`).join("")}
+    ${[["all","Alle"],["item","Artikel"],["gift","Gutscheine"],["group","Gemeinschaft"]].map(([k,n])=>`<button class="chip ${F.type===k?"on":""}" data-a="type" data-v="${k}">${n}</button>`).join("")}
     <button class="chip ${F.free?"on":""}" data-a="free">Nur Verfügbare</button></div>
     ${v.length?`<div class="grid">${v.map(i=>card(i,own)).join("")}</div>`:`<div class="empty">${items.length?"Nichts gefunden. Ändere die Filter.":own?"Noch leer. Füge deinen ersten Wunsch hinzu.":"Hier steht noch nichts."}</div>`}`;
     $("#s").value=F.sort;
     if(keep){const q=$("#q");q.focus();q.setSelectionRange(q.value.length,q.value.length)}
-    app._items=items;app._own=own;
+    app._items=items;app._own=own;nudge(!user);
   };
   unsubs.push(onSnapshot(doc(db,"lists",id),s=>{if(!s.exists()){app.innerHTML=top()+`<div class="empty">Diese Liste gibt es nicht.</div>`;return}L={id,...s.data()};paint()}));
   unsubs.push(onSnapshot(collection(db,"lists",id,"items"),s=>{items=s.docs.map(d=>({id:d.id,...d.data()}));paint()}));
   app._lid=id;app._paint=paint;
 }
-const isDone=i=>i.type==="gift"?i.collected>=i.goal:i.bought>=i.qty;
-const val=i=>i.type==="gift"?i.goal:i.price;
+const isDone=i=>i.type!=="item"?i.collected>=i.goal:i.bought>=i.qty;
+const val=i=>i.type!=="item"?i.goal:i.price;
 
 function card(i,own){
-  const gift=i.type==="gift",done=isDone(i),pct=gift?Math.min(100,i.collected/i.goal*100):(i.bought/i.qty*100);
+  const gift=i.type!=="item",done=isDone(i),pct=gift?Math.min(100,i.collected/i.goal*100):(i.bought/i.qty*100);
   const img=imgSrc(i.img);
-  return`<article class="tk ${done?"done":""}">${own?`<button class="x" data-a="del" data-id="${i.id}" aria-label="Löschen">✕</button>`:""}
+  return`<article class="tk ${done?"done":""}" data-a="open" data-id="${i.id}">${own?`<div class="xs"><button data-a="edit" data-id="${i.id}" aria-label="Bearbeiten">✎</button><button data-a="del" data-id="${i.id}" aria-label="Löschen">✕</button></div>`:""}
   <div class="im" ${img?`style="background-image:url('${esc(img)}')"`:""}>${img?"":(gift?"🎟️":"🎁")}</div>
   <div class="bd">${done?`<span class="flag">${gift?"Ausverkauft":"Schon gekauft"}</span>`:""}
-  <h3>${esc(i.name)}</h3><span class="st" aria-label="Wichtigkeit ${i.score} von 5">${"★".repeat(i.score)}${"☆".repeat(5-i.score)}</span>
+  <h3><button class="tt" data-a="open" data-id="${i.id}">${esc(i.name)}</button></h3><span class="st" aria-label="Wichtigkeit ${i.score} von 5">${"★".repeat(i.score)}${"☆".repeat(5-i.score)}</span>
   <div class="pr">${gift?eur(i.goal):eur(i.price)}</div>
   ${gift||i.qty>1?`<div class="pg"><i style="width:${pct}%"></i></div><div class="mut">${gift?`${eur(i.collected)} von ${eur(i.goal)}`:`${i.bought} von ${i.qty} gekauft`}</div>`:""}
-  ${url(i.link)?`<a class="mut" href="${esc(url(i.link))}" target="_blank" rel="noopener">Zum Shop ↗</a>`:""}
+  ${i.desc?`<p class="mut clamp">${esc(i.desc)}</p>`:""}
   <div style="margin-top:auto;padding-top:.3rem"><button data-a="buy" data-id="${i.id}" style="width:100%" ${done?"disabled":""}>${done?"Nicht mehr verfügbar":gift?"Beitragen":"Kaufen"}</button></div></div></article>`;
 }
 
+function detail(i){
+  const gift=i.type!=="item",done=isDone(i),img=imgSrc(i.img),pct=gift?Math.min(100,i.collected/i.goal*100):i.bought/i.qty*100;
+  dlg.className="wide";
+  dlg.innerHTML=`<div class="dimg" ${img?`style="background-image:url('${esc(img)}')"`:""}>${img?"":(gift?"🎟️":"🎁")}</div>
+  <h2 style="margin-top:1rem">${esc(i.name)}</h2>
+  <div class="row" style="margin:.5rem 0"><span class="st" aria-label="Wichtigkeit ${i.score} von 5">${"★".repeat(i.score)}${"☆".repeat(5-i.score)}</span><span class="pr">${eur(gift?i.goal:i.price)}</span>${done?`<span class="flag">${gift?"Ausverkauft":"Schon gekauft"}</span>`:""}</div>
+  ${i.desc?`<p class="desc">${esc(i.desc)}</p>`:`<p class="mut">Zu diesem Eintrag gibt es keine Beschreibung.</p>`}
+  ${gift||i.qty>1?`<div class="pg"><i style="width:${pct}%"></i></div><p class="mut">${gift?`${eur(i.collected)} von ${eur(i.goal)}`:`${i.bought} von ${i.qty} gekauft`}</p>`:""}
+  ${gift&&(i.steps||[]).length?`<p class="mut">Wählbare Beträge: ${i.steps.map(eur).join(", ")}</p>`:""}
+  ${i.link||i.pay?`<p class="mut">Kauf über ${esc(host(i.type!=="item"?(i.pay||i.link):i.link))}. Der Link öffnet sich erst nach dem Kaufen.</p>`:""}
+  <div class="row" style="justify-content:flex-end;margin-top:1rem"><button class="ghost" data-a="close">Schließen</button><button data-a="buy" data-id="${i.id}" ${done?"disabled":""}>${done?"Nicht mehr verfügbar":gift?"Beitragen":"Kaufen"}</button></div>`;
+  if(!dlg.open)dlg.showModal();
+}
+
+function host(u){try{return new URL(u).hostname.replace(/^www\./,"")}catch{return""}}
+function normUrl(u){u=(u||"").trim();if(!u)return"";if(!/^https?:\/\//i.test(u))u="https://"+u;try{const x=new URL(u);[...x.searchParams.keys()].forEach(k=>{if(/^(utm_|fbclid|gclid|mc_)/i.test(k))x.searchParams.delete(k)});return x.toString()}catch{return""}}
+async function killList(id){const q=await getDocs(collection(db,"lists",id,"items"));await Promise.all(q.docs.map(d=>deleteDoc(d.ref)));await deleteDoc(doc(db,"lists",id))}
+
+function nudge(on){
+  let n=$("#nudge");
+  if(!on||nudgeOff){n?.remove();return}
+  if(n)return;
+  n=document.createElement("div");n.id="nudge";
+  n.innerHTML=`<span>Erstelle deine eigene Wunschliste</span><button data-a="in">Los geht's</button><button class="nx" data-a="nudgex" aria-label="Schließen">✕</button>`;
+  document.body.appendChild(n);
+}
+
 function askBuy(i){
-  const gift=i.type==="gift",rest=gift?i.goal-i.collected:0;
+  const gift=i.type!=="item",rest=gift?i.goal-i.collected:0,hs=gift&&(i.steps||[]).length>0,
+  chips=hs?[...new Set([...i.steps.filter(n=>n<=rest),rest])].sort((a,b)=>a-b):[],
+  go=gift?(i.pay||i.link):i.link;
+  dlg.className="";
   dlg.innerHTML=`<h2>${gift?"Wie viel schenkst du?":"Wirklich kaufen?"}</h2><p><b>${esc(i.name)}</b></p>
-  ${gift?`<label for="amt">Betrag in Euro (max. ${eur(rest)})</label><input id="amt" type="number" min="1" max="${rest}" step="1" value="${Math.min(rest,20)}">`:""}
-  <div class="warn">Achtung: ${gift?"Der Betrag":"Der Kauf"} lässt sich danach nicht mehr rückgängig machen.</div>
+  ${gift?(hs?`<label>Betrag wählen</label><div class="amts">${chips.map((n,k)=>`<label class="amt"><input type="radio" name="am" value="${n}" ${k?"":"checked"}><span>${eur(n)}${i.steps.includes(n)?"":" (Rest)"}</span></label>`).join("")}</div>`:`<label for="amt">Betrag in Euro (max. ${eur(rest)})</label><input id="amt" type="number" min="1" max="${rest}" step="1" value="${Math.min(rest,20)}">`):""}
+  <div class="warn">Achtung: ${gift?"Der Betrag":"Der Kauf"} lässt sich danach nicht mehr rückgängig machen.${go?` Danach geht es weiter zu ${esc(host(go))}.`:""}</div>
   <div class="row" style="justify-content:flex-end"><button class="ghost" data-a="close">Abbrechen</button><button id="go">${gift?"Verbindlich beitragen":"Verbindlich kaufen"}</button></div>`;
-  dlg.showModal();
+  if(!dlg.open)dlg.showModal();
   $("#go").onclick=async()=>{
-    const amt=gift?Math.round(Number($("#amt").value)):1;
-    if(!(amt>=1)||(gift&&amt>rest)){toast("Bitte einen gültigen Betrag eingeben.");return}
+    const w=go?window.open("","_blank"):null;
+    const amt=gift?(hs?Number(dlg.querySelector("input[name=am]:checked")?.value):Math.round(Number($("#amt").value))):1;
+    if(!(amt>=1)||(gift&&amt>rest)){w?.close();toast("Bitte einen gültigen Betrag eingeben.");return}
     try{await runTransaction(db,async t=>{
       const r=doc(db,"lists",app._lid,"items",i.id),d=(await t.get(r)).data();
-      if(d.type==="gift"){if(d.collected+amt>d.goal)throw 0;t.update(r,{collected:d.collected+amt})}
+      if(d.type!=="item"){if(d.collected+amt>d.goal)throw 0;t.update(r,{collected:d.collected+amt})}
       else{if(d.bought>=d.qty)throw 0;t.update(r,{bought:d.bought+1})}});
+      if(go&&w)w.location.href=go;
+      else if(go){dlg.innerHTML=`<h2>Gekauft. Danke!</h2><p><a class="btn" href="${esc(go)}" target="_blank" rel="noopener">Weiter zu ${esc(host(go))} ↗</a></p><button class="ghost" data-a="close">Schließen</button>`;return}
       dlg.close();toast("Gekauft. Danke!")}
-    catch{dlg.close();toast("Das war leider schon weg oder zu viel.")}
+    catch{w?.close();dlg.close();toast("Das war leider schon weg oder zu viel.")}
   };
 }
 
-function authMsg(c){return({"auth/invalid-credential":"E-Mail oder Passwort stimmt nicht.","auth/email-already-in-use":"Diese E-Mail hat schon ein Konto.","auth/weak-password":"Das Passwort ist zu kurz (mindestens 6 Zeichen).","auth/invalid-email":"Die E-Mail-Adresse ist ungültig.","auth/operation-not-allowed":"Diese Anmeldung ist in Firebase noch nicht aktiviert.","auth/unauthorized-domain":"Diese Domain ist in Firebase nicht freigegeben.","auth/popup-blocked":"Das Popup wurde blockiert. Bitte erlaube Popups.","auth/account-exists-with-different-credential":"Für diese E-Mail gibt es schon ein Konto mit einer anderen Anmeldeart."})[c]||"Anmeldung nicht möglich."}
-
-async function provLogin(p){
-  const pr=p==="github"?new GithubAuthProvider():p==="microsoft"?new OAuthProvider("microsoft.com"):new GoogleAuthProvider();
-  try{await signInWithPopup(auth,pr);dlg.close()}
-  catch(x){if(x.code!=="auth/popup-closed-by-user"&&x.code!=="auth/cancelled-popup-request")toast(authMsg(x.code))}
-}
-
-const LOGO={
-google:'<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>',
-microsoft:'<svg viewBox="0 0 23 23" aria-hidden="true"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>',
-github:'<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>'};
-
-function loginDlg(mode="in"){
-  if(!configured){toast("Firebase ist noch nicht eingerichtet.");return}
-  const up=mode==="up";
-  dlg.innerHTML=`<div class="tabs"><button type="button" class="${up?"":"on"}" data-a="tab" data-v="in">Anmelden</button><button type="button" class="${up?"on":""}" data-a="tab" data-v="up">Account erstellen</button></div>
-  <form id="lf"><label for="em">E-Mail</label><input id="em" type="email" required autocomplete="email">
-  <label for="pw">Passwort</label><input id="pw" type="password" required minlength="6" autocomplete="${up?"new-password":"current-password"}">
-  ${up?"":`<button type="button" class="lnk" data-a="reset">Passwort vergessen?</button>`}
-  <button type="submit" style="width:100%;margin-top:1rem">${up?"Account erstellen":"Anmelden"}</button></form>
-  <p class="mut" style="text-align:center;margin:1.1rem 0 .6rem">oder weiter mit</p>
-  <div class="prov">${[["google","Google"],["microsoft","Microsoft"],["github","GitHub"]].map(([k,n])=>`<button type="button" class="pv" data-a="prov" data-v="${k}">${LOGO[k]}${n}</button>`).join("")}</div>
-  <div class="row" style="justify-content:center;margin-top:.6rem"><button type="button" class="lnk" data-a="close">Abbrechen</button></div>`;
-  if(!dlg.open)dlg.showModal();
-  $("#lf").onsubmit=async e=>{e.preventDefault();
-    const em=$("#em").value.trim(),pw=$("#pw").value;
-    try{if(up)await createUserWithEmailAndPassword(auth,em,pw);else await signInWithEmailAndPassword(auth,em,pw);dlg.close()}
-    catch(x){toast(authMsg(x.code))}};
-}
-
-function shrink(file,max=640){return new Promise((res,rej)=>{
-  const im=new Image(),u=URL.createObjectURL(file);
-  im.onerror=()=>{URL.revokeObjectURL(u);rej()};
-  im.onload=()=>{URL.revokeObjectURL(u);
-    let s=Math.min(1,max/Math.max(im.width,im.height)),q=.75,out="";
-    const c=document.createElement("canvas"),x=c.getContext("2d");
-    for(let n=0;n<6;n++){c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));
-      x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
-      out=c.toDataURL("image/jpeg",q);if(out.length<140000)break;s*=.8;q=Math.max(.5,q-.08)}
-    out.length<300000?res(out):rej()};
-  im.src=u})}
-
-function addDlg(){
-  dlg.innerHTML=`<h2>Eintrag hinzufügen</h2><form id="af"><label for="ty">Art</label><select id="ty"><option value="item">Artikel</option><option value="gift">Gutschein</option></select>
+function itemDlg(it=null,lid=app._lid){
+  const ed=!!it;let imgData="",extImg="",keep=it?.img||"";
+  dlg.className="";
+  dlg.innerHTML=`<h2>${ed?"Eintrag bearbeiten":"Eintrag hinzufügen"}</h2><form id="af"><label for="ty">Art</label><select id="ty" ${ed?"disabled":""}><option value="item">Artikel</option><option value="gift">Gutschein</option><option value="group">Gemeinschaftsgeschenk</option></select>
   <label for="nm">Name</label><input id="nm" required maxlength="80">
-  <label for="lk">Link zum Shop (optional)</label><input id="lk" type="url" placeholder="https://…">
-  <label for="fi">Bild hochladen (optional)</label><input id="fi" type="file" accept="image/*"><img id="pimg" alt="Vorschau">
-  <div id="f1" class="two"><div><label for="pr">Preis in Euro</label><input id="pr" type="number" min="0" step="0.01" value="0"></div>
-  <div><label for="qt">Wie oft kaufbar?</label><input id="qt" type="number" min="1" max="99" value="1"></div></div>
-  <div id="f2" hidden><label for="gl">Gesamtbetrag, den du haben möchtest (Euro)</label><input id="gl" type="number" min="1" step="1" value="50"></div>
+  <label for="lk">Link zum Shop (optional)</label><div class="row" style="flex-wrap:nowrap"><input id="lk" inputmode="url" placeholder="https://…"><button type="button" class="ghost" id="auto" style="white-space:nowrap">Automatisch ausfüllen</button></div>
+  <label for="ds">Beschreibung (optional)</label><textarea id="ds" rows="3" maxlength="600"></textarea>
+  <label for="fi">Bild hochladen (optional)</label><input id="fi" type="file" accept="image/*"><img id="pimg" alt="Vorschau"><button type="button" class="lnk" id="rm">Bild entfernen</button>
+  <div id="f1" class="two"><div><label for="pr">Preis in Euro</label><input id="pr" type="number" min="0" step="0.01" value="0"></div><div><label for="qt">Wie oft kaufbar?</label><input id="qt" type="number" min="1" max="99" value="1"></div></div>
+  <div id="f2" hidden><label for="gl">Zielbetrag in Euro</label><input id="gl" type="number" min="1" step="1" value="50">
+  <label for="st">Wählbare Beträge in Euro, mit Komma getrennt (optional)</label><input id="st" placeholder="10, 25, 50">
+  <label for="pp">PayPal-Link (optional)</label><input id="pp" inputmode="url" placeholder="paypal.me/…"></div>
   <label for="sc">Wichtigkeit (1 bis 5)</label><input id="sc" type="range" min="1" max="5" value="3">
-  <div class="row" style="justify-content:flex-end;margin-top:1rem"><button type="button" class="ghost" data-a="close">Abbrechen</button><button type="submit">Speichern</button></div></form>`;
-  dlg.showModal();
-  let imgData="";
-  $("#fi").onchange=async e=>{const f=e.target.files[0];imgData="";$("#pimg").style.display="none";if(!f)return;
-    try{imgData=await shrink(f);const p=$("#pimg");p.src=imgData;p.style.display="block"}catch{toast("Das Bild konnte nicht verarbeitet werden.");e.target.value=""}};
-  $("#ty").onchange=e=>{$("#f1").hidden=e.target.value==="gift";$("#f2").hidden=e.target.value!=="gift"};
-  $("#af").onsubmit=async e=>{e.preventDefault();const g=$("#ty").value==="gift";
-    await addDoc(collection(db,"lists",app._lid,"items"),{type:g?"gift":"item",name:$("#nm").value.trim(),link:$("#lk").value,img:imgData,
-      price:g?0:Number($("#pr").value)||0,qty:g?1:Math.max(1,Math.floor($("#qt").value)||1),bought:0,
-      goal:g?Math.max(1,Math.round($("#gl").value)):0,collected:0,score:Number($("#sc").value),created:serverTimestamp()});
-    dlg.close();toast("Eintrag gespeichert.")};
+  <div class="row" style="justify-content:flex-end;margin-top:1rem"><button type="button" class="ghost" data-a="close">Abbrechen</button><button type="submit">${ed&&isAdm&&it.reviewed===false?"Speichern und fertig":"Speichern"}</button></div></form>`;
+  const sync=()=>{const g=$("#ty").value!=="item";$("#f1").hidden=g;$("#f2").hidden=!g};
+  const pv=u=>{const p=$("#pimg");p.src=u||"";p.style.display=u?"block":"none"};
+  if(ed){$("#ty").value=it.type;$("#nm").value=it.name;$("#lk").value=it.link||"";$("#ds").value=it.desc||"";$("#sc").value=it.score;
+    $("#pr").value=it.price||0;$("#qt").value=it.qty||1;$("#gl").value=it.goal||50;$("#st").value=(it.steps||[]).join(", ");$("#pp").value=it.pay||"";pv(keep)}
+  sync();dlg.showModal();
+  $("#ty").onchange=sync;
+  $("#rm").onclick=()=>{imgData="";extImg="";keep="";$("#fi").value="";pv("")};
+  $("#fi").onchange=async e=>{const f=e.target.files[0];if(!f)return;
+    try{imgData=await shrink(f);extImg="";pv(imgData)}catch{toast("Das Bild konnte nicht verarbeitet werden.");e.target.value=""}};
+  $("#auto").onclick=async()=>{
+    const l=normUrl($("#lk").value),b=$("#auto");
+    if(!l){toast("Bitte zuerst einen Link eintragen.");return}
+    b.disabled=true;b.textContent="Lädt …";
+    try{const j=await(await fetch("https://api.microlink.io/?url="+encodeURIComponent(l))).json();if(j.status!=="success")throw 0;const d=j.data;
+      if(d.title&&!$("#nm").value)$("#nm").value=d.title.slice(0,80);
+      if(d.description&&!$("#ds").value)$("#ds").value=d.description.slice(0,600);
+      if(d.image?.url&&!imgData&&!keep){extImg=d.image.url;pv(extImg)}
+      toast("Daten übernommen. Wird vom Admin geprüft.")}
+    catch{toast("Aus diesem Link ging das nicht. Trage es bitte selbst ein.")}
+    b.disabled=false;b.textContent="Automatisch ausfüllen"};
+  $("#af").onsubmit=async e=>{e.preventDefault();
+    const ty=$("#ty").value,g=ty!=="item";
+    const d={name:$("#nm").value.trim(),link:normUrl($("#lk").value),pay:g?normUrl($("#pp").value):"",desc:$("#ds").value.trim().slice(0,600),img:imgData||extImg||keep,score:Number($("#sc").value),
+      price:g?0:Number($("#pr").value)||0,qty:g?1:Math.max(ed?it.bought:1,Math.floor($("#qt").value)||1),
+      goal:g?Math.max(ed?it.collected:1,Math.round($("#gl").value)):0,
+      steps:g?[...new Set($("#st").value.split(/[,;\s]+/).map(n=>Math.round(Number(n))).filter(n=>n>=1&&n<=Math.round($("#gl").value)))].sort((a,b)=>a-b):[]};
+    try{if(ed)await updateDoc(doc(db,"lists",lid,"items",it.id),isAdm?{...d,reviewed:true}:d);
+      else await addDoc(collection(db,"lists",lid,"items"),{...d,type:ty,bought:0,collected:0,reviewed:false,created:serverTimestamp()});
+      dlg.close();toast("Gespeichert.")}catch{toast("Speichern hat nicht geklappt.")}};
+}
+
+function adminView(){
+  if(!isAdm){location.hash="#/";return}
+  const A={lists:[],items:[]};app._adm=A;
+  const paint=()=>{
+    const nl=A.lists.filter(l=>l.reviewed===false),ni=A.items.filter(i=>i.reviewed===false),n=id=>esc(A.lists.find(l=>l.id===id)?.title||"?");
+    const lr=l=>`<div class="rw"><div><b>${(OCC[l.occ]||OCC.sonstiges)[0]} ${esc(l.title)}</b><span class="mut">${A.items.filter(i=>i.lid===l.id).length} Einträge${l.reviewed===false?" · neu":""}</span></div><div class="row"><a class="btn" href="#/l/${l.id}">Öffnen</a><button class="ghost" data-a="alist" data-id="${l.id}">Umbenennen</button>${l.reviewed===false?`<button data-a="alok" data-id="${l.id}">Fertig</button>`:""}<button class="ghost" data-a="aldel" data-id="${l.id}">Löschen</button></div></div>`;
+    const ir=i=>`<div class="rw"><div class="row" style="flex-wrap:nowrap"><div class="th" ${imgSrc(i.img)?`style="background-image:url('${esc(imgSrc(i.img))}')"`:""}></div><div><b>${esc(i.name)}</b><span class="mut">in ${n(i.lid)} · ${eur(i.type!=="item"?i.goal:i.price)}</span></div></div><div class="row"><button class="ghost" data-a="aitem" data-id="${i.id}">Bearbeiten</button><button data-a="aok" data-id="${i.id}">Fertig</button></div></div>`;
+    app.innerHTML=top()+`<h2>Admin</h2><h3 style="margin:1.2rem 0 .6rem">Neu zu prüfen (${nl.length+ni.length})</h3>${nl.length+ni.length?`<div class="rows">${nl.map(lr).join("")}${ni.map(ir).join("")}</div>`:`<p class="mut">Alles geprüft.</p>`}
+    <h3 style="margin:1.6rem 0 .6rem">Alle Wunschlisten (${A.lists.length})</h3><div class="rows">${[...A.lists].sort((a,b)=>(b.created?.seconds||0)-(a.created?.seconds||0)).map(lr).join("")}</div>`;
+  };
+  unsubs.push(onSnapshot(collection(db,"lists"),q=>{A.lists=q.docs.map(d=>({id:d.id,...d.data()}));paint()}));
+  unsubs.push(onSnapshot(collectionGroup(db,"items"),q=>{A.items=q.docs.map(d=>({id:d.id,lid:d.ref.parent.parent.id,...d.data()}));paint()}));
 }
 
 document.addEventListener("click",async e=>{
-  const b=e.target.closest("[data-a]");if(!b)return;
+  const b=e.target.closest("[data-a]");if(!b||e.target.closest("a"))return;
   const a=b.dataset.a,it=app._items?.find(x=>x.id===b.dataset.id);
   if(a==="in")loginDlg();
   else if(a==="tab")loginDlg(b.dataset.v);
@@ -290,8 +360,16 @@ document.addEventListener("click",async e=>{
   else if(a==="out"){await signOut(auth);location.hash="#/"}
   else if(a==="new")location.hash="#/neu";
   else if(a==="close")dlg.close();
-  else if(a==="add")addDlg();
   else if(a==="buy"&&it)askBuy(it);
+  else if(a==="open"&&it)detail(it);
+  else if(a==="edit"&&it)itemDlg(it);
+  else if(a==="add")itemDlg();
+  else if(a==="aitem"){const x=app._adm.items.find(y=>y.id===b.dataset.id);itemDlg(x,x.lid)}
+  else if(a==="aok"){const x=app._adm.items.find(y=>y.id===b.dataset.id);await updateDoc(doc(db,"lists",x.lid,"items",x.id),{reviewed:true})}
+  else if(a==="alok")await updateDoc(doc(db,"lists",b.dataset.id),{reviewed:true});
+  else if(a==="alist"){const l=app._adm.lists.find(y=>y.id===b.dataset.id),t=prompt("Name der Liste:",l.title);if(t?.trim())await updateDoc(doc(db,"lists",l.id),{title:t.trim().slice(0,60),reviewed:true})}
+  else if(a==="aldel"&&confirm("Liste mit allen Einträgen löschen?"))await killList(b.dataset.id);
+  else if(a==="nudgex"){nudgeOff=true;nudge(false)}
   else if(a==="del"&&it&&confirm("Diesen Eintrag löschen?"))await deleteDoc(doc(db,"lists",app._lid,"items",it.id));
   else if(a==="share"){try{await navigator.clipboard.writeText(location.href);toast("Link kopiert.")}catch{prompt("Link kopieren:",location.href)}}
   else if(a==="type"){F.type=b.dataset.v;app._paint()}
@@ -301,7 +379,7 @@ document.addEventListener("input",e=>{if(e.target.id==="q"){F.q=e.target.value;a
 document.addEventListener("change",e=>{if(e.target.id==="s"){F.sort=e.target.value;app._paint()}});
 window.addEventListener("hashchange",route);
 
-if(configured)onAuthStateChanged(auth,u=>{user=u;route()});else route();
+if(configured)onAuthStateChanged(auth,async u=>{user=u;isAdm=false;if(u){try{isAdm=(await getDoc(doc(db,"admins",u.uid))).exists()}catch{}}route()});else route();
 </script>
 </body>
 </html>
