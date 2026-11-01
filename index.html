@@ -68,7 +68,7 @@ dialog::backdrop{background:#0a0620aa}
 .warn{background:color-mix(in srgb,var(--ac2) 22%,transparent);border-radius:10px;padding:.6rem .8rem;margin:.8rem 0;font-size:.95rem}
 .note{background:var(--card);border:1.5px dashed var(--ac);border-radius:14px;padding:1rem;margin:1rem 0}
 .empty{text-align:center;padding:2.5rem 1rem;color:var(--mut)}
-#toast{position:fixed;left:50%;bottom:calc(1.2rem + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:.7rem 1.1rem;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast{z-index:50;max-width:90vw;text-align:center;position:fixed;left:50%;bottom:calc(1.2rem + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:.7rem 1.1rem;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .2s}
 #toast.on{opacity:1}
 [hidden]{display:none!important}
 body:not([data-t]),body[data-t=weihnachten]{background-image:radial-gradient(circle,#ffffff2b 1.6px,#0000 2.2px),radial-gradient(circle,#ffffff1c 1px,#0000 1.6px);background-size:150px 150px,97px 97px;background-position:0 0,50px 40px}
@@ -178,7 +178,9 @@ const app=$("#app"),dlg=$("#dlg");
 dlg.addEventListener("close",()=>{dlg.className=""});
 let user=null,isAdm=false,nudgeOff=false,unsubs=[],F={sort:"score",type:"all",free:false,q:""};
 
-function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),2600)}
+function toast(t){const h=[...document.querySelectorAll("dialog[open]")].pop()||document.body;let e=$("#toast");if(!e){e=document.createElement("div");e.id="toast";e.setAttribute("role","status")}h.appendChild(e);e.textContent=t;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),4500)}
+window.addEventListener("unhandledrejection",e=>toast("Fehler: "+(e.reason?.code||e.reason?.message||e.reason)));
+window.addEventListener("error",e=>toast("Fehler: "+e.message));
 function clear(){unsubs.forEach(u=>u());unsubs=[]}
 function top(back){return`<div class="top"><div class="row">${back&&user?`<a class="back" href="#/" aria-label="Zurück zu meinen Wunschlisten">←</a>`:""}<a href="#/"><b>🎟️ Die Gutscheinseite</b></a></div><div class="row">${isAdm?`<a href="#/admin">Admin</a>`:""}${user?`<span class="mut">${esc(user.displayName||user.email||"")}</span><button class="ghost" data-a="out">Abmelden</button>`:`<button class="ghost" data-a="in">Anmelden</button>`}<button class="ghost" data-a="settings" aria-label="Einstellungen">⚙</button></div></div>`}
 function setup(){return configured?"":`<div class="note"><b>Firebase fehlt noch.</b> Trage oben in der index.html deine Firebase-Daten ein, dann läuft alles.</div>`}
@@ -266,7 +268,7 @@ function applyPrefs(){const P=prefs(),h=document.documentElement;P.mode==="auto"
 async function unlock(c){
   if(!user){toast("Bitte melde dich zuerst an.");return}
   try{await setDoc(doc(db,"admins",user.uid),{code:String(c).trim()});isAdm=true;toast("Admin freigeschaltet.");settings();route()}
-  catch{toast("Der Code stimmt nicht.")}
+  catch(x){toast(x.code==="permission-denied"?"Der Code stimmt nicht, oder das Dokument config/admin fehlt in Firestore.":"Fehler: "+(x.code||x.message))}
 }
 
 function settings(){
@@ -409,6 +411,50 @@ function itemDlg(it=null,lid=app._lid){
       else await addDoc(collection(db,"lists",lid,"items"),{...d,type:ty,bought:0,collected:0,reviewed:false,enriched:true,created:serverTimestamp()});
       dlg.close();toast("Gespeichert.")}catch{$("#sv").disabled=false;toast("Speichern hat nicht geklappt.")}};
 }
+
+function authMsg(c){return({"auth/invalid-credential":"E-Mail oder Passwort stimmt nicht.","auth/email-already-in-use":"Diese E-Mail hat schon ein Konto.","auth/weak-password":"Das Passwort ist zu kurz (mindestens 6 Zeichen).","auth/invalid-email":"Die E-Mail-Adresse ist ungültig.","auth/operation-not-allowed":"Diese Anmeldeart ist in Firebase noch nicht aktiviert.","auth/unauthorized-domain":"Diese Domain ist in Firebase nicht freigegeben.","auth/popup-blocked":"Das Popup wurde blockiert. Bitte erlaube Popups.","auth/account-exists-with-different-credential":"Für diese E-Mail gibt es schon ein Konto mit einer anderen Anmeldeart."})[c]||"Anmeldung nicht möglich ("+(c||"unbekannt")+")."}
+
+async function provLogin(p){
+  const pr=p==="github"?new GithubAuthProvider():p==="microsoft"?new OAuthProvider("microsoft.com"):new GoogleAuthProvider();
+  try{await signInWithPopup(auth,pr);dlg.close()}
+  catch(x){if(x.code!=="auth/popup-closed-by-user"&&x.code!=="auth/cancelled-popup-request")toast(authMsg(x.code))}
+}
+
+const LOGO={
+google:'<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>',
+microsoft:'<svg viewBox="0 0 23 23" aria-hidden="true"><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/></svg>',
+github:'<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>'};
+
+function loginDlg(mode="in"){
+  if(!configured){toast("Firebase ist noch nicht eingerichtet.");return}
+  const up=mode==="up";
+  dlg.className="";
+  dlg.innerHTML=`<div class="tabs"><button type="button" class="${up?"":"on"}" data-a="tab" data-v="in">Anmelden</button><button type="button" class="${up?"on":""}" data-a="tab" data-v="up">Account erstellen</button></div>
+  <form id="lf"><label for="em">E-Mail</label><input id="em" type="email" required autocomplete="email">
+  <label for="pw">Passwort</label><input id="pw" type="password" required minlength="6" autocomplete="${up?"new-password":"current-password"}">
+  ${up?"":`<button type="button" class="lnk" data-a="reset">Passwort vergessen?</button>`}
+  <button type="submit" style="width:100%;margin-top:1rem">${up?"Account erstellen":"Anmelden"}</button></form>
+  <p class="mut" style="text-align:center;margin:1.1rem 0 .6rem">oder weiter mit</p>
+  <div class="prov">${[["google","Google"],["microsoft","Microsoft"],["github","GitHub"]].map(([k,n])=>`<button type="button" class="pv" data-a="prov" data-v="${k}">${LOGO[k]}${n}</button>`).join("")}</div>
+  <div class="row" style="justify-content:center;margin-top:.6rem"><button type="button" class="lnk" data-a="close">Abbrechen</button></div>`;
+  if(!dlg.open)dlg.showModal();
+  $("#lf").onsubmit=async e=>{e.preventDefault();
+    const em=$("#em").value.trim(),pw=$("#pw").value;
+    try{if(up)await createUserWithEmailAndPassword(auth,em,pw);else await signInWithEmailAndPassword(auth,em,pw);dlg.close()}
+    catch(x){toast(authMsg(x.code))}};
+}
+
+function shrink(file,max=640){return new Promise((res,rej)=>{
+  const im=new Image(),u=URL.createObjectURL(file);
+  im.onerror=()=>{URL.revokeObjectURL(u);rej()};
+  im.onload=()=>{URL.revokeObjectURL(u);
+    let s=Math.min(1,max/Math.max(im.width,im.height)),q=.75,out="";
+    const c=document.createElement("canvas"),x=c.getContext("2d");
+    for(let n=0;n<6;n++){c.width=Math.max(1,Math.round(im.width*s));c.height=Math.max(1,Math.round(im.height*s));
+      x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
+      out=c.toDataURL("image/jpeg",q);if(out.length<140000)break;s*=.8;q=Math.max(.5,q-.08)}
+    out.length<300000?res(out):rej()};
+  im.src=u})}
 
 function adminView(){
   if(!isAdm){location.hash="#/";return}
