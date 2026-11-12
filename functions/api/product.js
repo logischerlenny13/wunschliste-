@@ -15,10 +15,10 @@ function decodeHtml(value) {
     .replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(Number(n)));
 }
 function cleanText(value) {
-  return decodeHtml(String(value || "").replace(/<[^>]*>/g," ").replace(/\\s+/g," ")).trim();
+  return decodeHtml(String(value || "").replace(/<[^>]*>/g," ").replace(/\s+/g," ")).trim();
 }
 function attr(tag, name) {
-  const re = new RegExp("(?:^|\\s)" + name.replace(/[.*+?^${}()|[\\]\\\\]/g,"\\$&") + "\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))","i");
+  const re = new RegExp("(?:^|\\s)" + name + "\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))","i");
   const m = tag.match(re);
   return decodeHtml(m ? (m[1] ?? m[2] ?? m[3] ?? "") : "");
 }
@@ -41,14 +41,16 @@ function validImage(raw) {
     const u = new URL(raw);
     if (u.protocol !== "https:" && u.protocol !== "http:") return "";
     const host = u.hostname.toLowerCase();
-    if (!(host.endsWith("media-amazon.com") || host.endsWith("images-amazon.com") || host.endsWith("ssl-images-amazon.com"))) return "";
-    if (/\\b(logo|icon|sprite|pixel|transparent|placeholder)\\b/i.test(u.pathname)) return "";
-    if (/\\.(svg|gif)(?:$|[?#])/i.test(u.href)) return "";
+    const amazonImageHost = ["media-amazon.com","images-amazon.com","ssl-images-amazon.com"]
+      .some(domain => host === domain || host.endsWith("." + domain));
+    if (!amazonImageHost) return "";
+    if (/\b(logo|icon|sprite|pixel|transparent|placeholder)\b/i.test(u.pathname)) return "";
+    if (/\.(svg|gif)(?:$|[?#])/i.test(u.href)) return "";
     return u.href;
   } catch { return ""; }
 }
 function meta(html, key, attrName="property") {
-  const tags = html.match(/<meta\\b[^>]*>/gi) || [];
+  const tags = html.match(/<meta\b[^>]*>/gi) || [];
   for (const tag of tags) {
     if (attr(tag,attrName).toLowerCase() === key.toLowerCase()) {
       const value = attr(tag,"content");
@@ -59,13 +61,13 @@ function meta(html, key, attrName="property") {
 }
 function parseAmazon(html, finalUrl) {
   const title = cleanText(
-    (html.match(/<span[^>]*id=["']productTitle["'][^>]*>([\\s\\S]*?)<\\/span>/i) || [])[1] ||
-    meta(html,"og:title") || (html.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i) || [])[1]
+    (html.match(/<span[^>]*id=["']productTitle["'][^>]*>([\s\S]*?)<\/span>/i) || [])[1] ||
+    meta(html,"og:title") || (html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1]
   ).slice(0,180);
   const desc = cleanText(meta(html,"og:description") || meta(html,"description","name")).slice(0,600);
   const bullets = [];
-  const bulletArea = (html.match(/id=["']feature-bullets["'][^>]*>([\\s\\S]*?)(?:<\\/ul>|<\\/div>)/i) || [])[1] || "";
-  for (const m of bulletArea.matchAll(/<span[^>]*class=["'][^"']*a-list-item[^"']*["'][^>]*>([\\s\\S]*?)<\\/span>/gi)) {
+  const bulletArea = (html.match(/id=["']feature-bullets["'][^>]*>([\s\S]*?)(?:<\/ul>|<\/div>)/i) || [])[1] || "";
+  for (const m of bulletArea.matchAll(/<span[^>]*class=["'][^"']*a-list-item[^"']*["'][^>]*>([\s\S]*?)<\/span>/gi)) {
     const t=cleanText(m[1]); if(t.length>8 && !bullets.includes(t)) bullets.push(t.slice(0,300));
   }
   const candidates=[];
@@ -75,12 +77,12 @@ function parseAmazon(html, finalUrl) {
       if(u)candidates.push(u);
     }
   };
-  const scripts = html.match(/<script[^>]*type=["']application\\/ld\\+json["'][^>]*>[\\s\\S]*?<\\/script>/gi) || [];
+  const scripts = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi) || [];
   for (const script of scripts) {
-    const raw=(script.match(/>([\\s\\S]*?)<\\/script>/i)||[])[1];
+    const raw=(script.match(/>([\s\S]*?)<\/script>/i)||[])[1];
     if(raw)try{collectProductImages(JSON.parse(decodeHtml(raw)),candidates)}catch{}
   }
-  for (const tag of html.match(/<img\\b[^>]*>/gi) || []) {
+  for (const tag of html.match(/<img\b[^>]*>/gi) || []) {
     const dynamic=attr(tag,"data-a-dynamic-image");
     if(dynamic)try{push(Object.keys(JSON.parse(dynamic)))}catch{}
     push(attr(tag,"data-old-hires"));
@@ -92,8 +94,8 @@ function parseAmazon(html, finalUrl) {
   return {title,desc,bullets:bullets.slice(0,8),imgs:images,url:finalUrl};
 }
 export async function onRequestGet({request}) {
-  const cors={"Access-Control-Allow-Origin":"*","Content-Type":"application/json; charset=utf-8","Cache-Control":"public, max-age=300"};
-  const send=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:cors});
+  const headers={"Content-Type":"application/json; charset=utf-8","Cache-Control":"public, max-age=300"};
+  const send=(data,status=200)=>new Response(JSON.stringify(data),{status,headers});
   try {
     const incoming=new URL(request.url);
     const raw=incoming.searchParams.get("url");
