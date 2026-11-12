@@ -313,7 +313,23 @@ function goodProductImage(raw){
   if(/(?:^|[?&])(?:width|w|size)=(?:1|16|20|24|32|48|64)(?:&|$)/i.test(u.href))return "";
   return u.href;
 }
+function isAmazonProductUrl(value){
+  try{const u=new URL(value);return /(^|\\.)amazon\\.[a-z.]+$/.test(u.hostname)||["amzn.eu","amzn.to","a.co"].includes(u.hostname)}catch{return false}
+}
 async function grab(l){
+  // Amazon zuerst direkt über eine kostenlose Cloudflare Pages Function abrufen.
+  // Dadurch verbraucht die Amazon-Erkennung kein Microlink-Tageskontingent.
+  if(isAmazonProductUrl(l)){
+    let response,data;
+    try{
+      response=await fetch("/api/product?url="+encodeURIComponent(l),{headers:{Accept:"application/json"}});
+      data=await response.json();
+    }catch{throw new Error("Der kostenlose Amazon-Abruf ist gerade nicht erreichbar.")}
+    if(!response.ok||!data?.ok)throw new Error(data?.message||"Amazon-Daten konnten nicht abgerufen werden.");
+    return data.data;
+  }
+  // Andere Shops verwenden weiterhin Microlink. Nur ein Abruf, damit das
+  // kostenlose Tageslimit nicht durch einen automatischen Doppelversuch verfällt.
   const e=encodeURIComponent,base="https://api.microlink.io/?url="+e(l);
   const fields=[
     ["bl.selectorAll","#feature-bullets li span.a-list-item"],["bl.attr","text"],
@@ -327,34 +343,22 @@ async function grab(l){
     ["prod.selectorAll",'[itemprop="image"]'],["prod.attr","content"]
   ];
   const q=base+"&"+fields.map(x=>"data."+x[0]+"="+e(x[1])).join("&");
-  let j;
-  try{
-    const response=await fetch(q,{headers:{Accept:"application/json"}});
-    if(!response.ok)throw new Error("Erweiterter Abruf fehlgeschlagen");
-    j=await response.json();
-    if(j.status!=="success"||!j.data)throw new Error("Keine erweiterten Produktdaten");
-  }catch{
-    // Fallback: einfacher Metadatenabruf, falls einzelne Shop-Selektoren scheitern.
-    const response=await fetch(base,{headers:{Accept:"application/json"}});
-    if(!response.ok)throw new Error("Produktdaten konnten nicht abgerufen werden");
-    j=await response.json();
-    if(j.status!=="success"||!j.data)throw new Error("Keine Produktdaten gefunden");
+  const response=await fetch(q,{headers:{Accept:"application/json"}});
+  let j;try{j=await response.json()}catch{throw new Error("Der Abrufdienst hat keine gültige Antwort geliefert.")}
+  if(!response.ok||j.status!=="success"||!j.data){
+    const code=j?.code||"UNKNOWN";
+    if(code==="ERATE")throw new Error("Das kostenlose Tageslimit der Bilderkennung ist erreicht. Bitte morgen erneut versuchen.");
+    if(code==="EPROXYNEEDED")throw new Error("Dieser Shop blockiert den kostenlosen Abrufdienst.");
+    throw new Error("Der Shop konnte nicht ausgelesen werden ("+code+").");
   }
   const d=j.data,candidates=[];
   const add=(v)=>{for(const x of imageCandidates(v,[])){const u=goodProductImage(x);if(u)candidates.push(u)}};
-  // Amazon: alle Varianten aus dem dynamischen Bildobjekt statt nur dem ersten Schlüssel.
-  let dynamic=d.dy;
-  if(typeof dynamic==="string"){try{dynamic=JSON.parse(dynamic)}catch{dynamic=null}}
+  let dynamic=d.dy;if(typeof dynamic==="string"){try{dynamic=JSON.parse(dynamic)}catch{dynamic=null}}
   if(dynamic&&typeof dynamic==="object")candidates.push(...Object.keys(dynamic).map(goodProductImage).filter(Boolean));
   add(d.th);add(d.th2);add(d.src);
-  // Strukturierte Produktdaten haben Vorrang vor allgemeinen Seitenbildern.
-  const ld=[].concat(d.ld||[]);
-  for(const raw of ld){try{const parsed=typeof raw==="string"?JSON.parse(raw):raw;candidates.unshift(...productJsonImages(parsed,[]).map(goodProductImage).filter(Boolean))}catch{}}
-  add(d.prod);add(d.og);add(d.tw);
-  // Microlink-Standardbild ist nur ein letzter Ausweg und wird auf typische Logos/Icons geprüft.
-  if(d.image?.url)add(d.image.url);
-  const imgs=[...new Set(candidates)].slice(0,8);
-  return{title:d.title||"",desc:(d.description||"").slice(0,600),bullets:[].concat(d.bl||[]).map(t=>String(t).trim().slice(0,300)).filter(t=>t.length>8).slice(0,8),imgs};
+  for(const raw of [].concat(d.ld||[])){try{const parsed=typeof raw==="string"?JSON.parse(raw):raw;candidates.unshift(...productJsonImages(parsed,[]).map(goodProductImage).filter(Boolean))}catch{}}
+  add(d.prod);add(d.og);add(d.tw);if(d.image?.url)add(d.image.url);
+  return{title:d.title||"",desc:(d.description||"").slice(0,600),bullets:[].concat(d.bl||[]).map(t=>String(t).trim().slice(0,300)).filter(t=>t.length>8).slice(0,8),imgs:[...new Set(candidates)].slice(0,8)};
 }
 const enq=new Set();let chain=Promise.resolve();
 function enrich(lid,it){
@@ -465,7 +469,7 @@ function itemDlg(it=null,lid=app._lid){
       if(g.bullets.length&&!$("#bl").value)$("#bl").value=g.bullets.join("\n");
       imgs=[...new Set([...imgs,...g.imgs])].slice(0,8);draw();
       toast("Daten übernommen. Wird vom Admin geprüft.")}
-    catch{toast("Aus diesem Link ging das nicht. Trage es bitte selbst ein.")}
+    catch(err){toast(err?.message||"Aus diesem Link ging das nicht. Trage es bitte selbst ein.")}
     b.disabled=false;b.textContent="Automatisch ausfüllen"};
   $("#af").onsubmit=async e=>{e.preventDefault();
     const ty=$("#ty").value,g=ty!=="item",lk=normUrl($("#lk").value);
