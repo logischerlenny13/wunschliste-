@@ -314,7 +314,7 @@ function goodProductImage(raw){
   return u.href;
 }
 function isAmazonProductUrl(value){
-  try{const u=new URL(value);return /(^|\\.)amazon\\.[a-z.]+$/.test(u.hostname)||["amzn.eu","amzn.to","a.co"].includes(u.hostname)}catch{return false}
+  try{const u=new URL(value);return /(^|\.)amazon\.[a-z.]+$/.test(u.hostname)||["amzn.eu","amzn.to","a.co"].includes(u.hostname)}catch{return false}
 }
 async function grab(l){
   // Amazon zuerst direkt über eine kostenlose Cloudflare Pages Function abrufen.
