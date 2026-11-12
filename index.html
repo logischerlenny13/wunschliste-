@@ -283,22 +283,81 @@ function settings(){
   const f=$("#af2");if(f)f.onsubmit=async e=>{e.preventDefault();await unlock($("#ac").value)};
 }
 
+function imageCandidates(value,out=[]){
+  if(!value)return out;
+  if(typeof value==="string"){out.push(value);return out}
+  if(Array.isArray(value)){for(const x of value)imageCandidates(x,out);return out}
+  if(typeof value==="object"){
+    if(typeof value.url==="string")out.push(value.url);
+    if(typeof value.contentUrl==="string")out.push(value.contentUrl);
+    if(typeof value["@id"]==="string"&&/\.(jpe?g|png|webp)(?:[?#]|$)/i.test(value["@id"]))out.push(value["@id"]);
+  }
+  return out;
+}
+function productJsonImages(value,out=[]){
+  if(Array.isArray(value)){for(const x of value)productJsonImages(x,out);return out}
+  if(!value||typeof value!=="object")return out;
+  const types=[].concat(value["@type"]||[]).map(x=>String(x).toLowerCase());
+  if(types.includes("product"))imageCandidates(value.image,out);
+  if(value["@graph"])productJsonImages(value["@graph"],out);
+  if(value.mainEntity)productJsonImages(value.mainEntity,out);
+  if(value.itemListElement)productJsonImages(value.itemListElement,out);
+  return out;
+}
+function goodProductImage(raw){
+  if(typeof raw!=="string"||!/^https?:\/\//i.test(raw))return "";
+  let u;try{u=new URL(raw)}catch{return ""}
+  const path=(u.pathname+" "+u.search).toLowerCase();
+  if(/\b(logo|favicon|sprite|icon|placeholder|avatar|tracking|pixel|blank|spacer)\b/.test(path))return "";
+  if(/\.(svg|gif)(?:$|[?#])/i.test(u.href))return "";
+  if(/(?:^|[?&])(?:width|w|size)=(?:1|16|20|24|32|48|64)(?:&|$)/i.test(u.href))return "";
+  return u.href;
+}
 async function grab(l){
-  const e=encodeURIComponent,q="https://api.microlink.io/?url="+e(l)+"&data.bl.selectorAll="+e("#feature-bullets li span.a-list-item")+"&data.bl.attr=text&data.th.selectorAll="+e("#altImages img")+"&data.th.attr=src&data.dy.selector="+e("#landingImage")+"&data.dy.attr=data-a-dynamic-image";
-  const j=await(await fetch(q)).json();if(j.status!=="success")throw 0;const d=j.data;
-  let im=[];try{im=Object.keys(JSON.parse(d.dy)).slice(0,1)}catch{}
-  im=[...im,...[].concat(d.th||[]).filter(u=>/^https:\/\/.+\.(jpe?g|png|webp)/i.test(u)&&!/sprite|play|pixel|transparent/i.test(u)).map(u=>u.replace(/\._[A-Za-z0-9_,]+_\./,"._AC_SL1000_."))];
-  if(d.image?.url)im.push(d.image.url);
-  return{title:d.title||"",desc:(d.description||"").slice(0,600),bullets:[].concat(d.bl||[]).map(t=>t.trim().slice(0,300)).filter(t=>t.length>8).slice(0,8),imgs:[...new Set(im)].slice(0,8)};
+  const e=encodeURIComponent,base="https://api.microlink.io/?url="+e(l);
+  const fields=[
+    ["bl.selectorAll","#feature-bullets li span.a-list-item"],["bl.attr","text"],
+    ["th.selectorAll","#altImages img"],["th.attr","src"],
+    ["th2.selectorAll","#altImages img"],["th2.attr","data-old-hires"],
+    ["dy.selector","#landingImage"],["dy.attr","data-a-dynamic-image"],
+    ["src.selector","#landingImage"],["src.attr","src"],
+    ["ld.selectorAll",'script[type="application/ld+json"]'],["ld.attr","text"],
+    ["og.selector",'meta[property="og:image"]'],["og.attr","content"],
+    ["tw.selector",'meta[name="twitter:image"]'],["tw.attr","content"],
+    ["prod.selectorAll",'[itemprop="image"]'],["prod.attr","content"]
+  ];
+  const q=base+"&"+fields.map(x=>"data."+x[0]+"="+e(x[1])).join("&");
+  const response=await fetch(q,{headers:{Accept:"application/json"}});
+  if(!response.ok)throw new Error("Produktdaten konnten nicht abgerufen werden");
+  const j=await response.json();if(j.status!=="success"||!j.data)throw new Error("Keine Produktdaten gefunden");
+  const d=j.data,candidates=[];
+  const add=(v)=>{for(const x of imageCandidates(v,[])){const u=goodProductImage(x);if(u)candidates.push(u)}};
+  // Amazon: alle Varianten aus dem dynamischen Bildobjekt statt nur dem ersten Schlüssel.
+  let dynamic=d.dy;
+  if(typeof dynamic==="string"){try{dynamic=JSON.parse(dynamic)}catch{dynamic=null}}
+  if(dynamic&&typeof dynamic==="object")candidates.push(...Object.keys(dynamic).map(goodProductImage).filter(Boolean));
+  add(d.th);add(d.th2);add(d.src);
+  // Strukturierte Produktdaten haben Vorrang vor allgemeinen Seitenbildern.
+  const ld=[].concat(d.ld||[]);
+  for(const raw of ld){try{const parsed=typeof raw==="string"?JSON.parse(raw):raw;candidates.unshift(...productJsonImages(parsed,[]).map(goodProductImage).filter(Boolean))}catch{}}
+  add(d.prod);add(d.og);add(d.tw);
+  // Microlink-Standardbild ist nur ein letzter Ausweg und wird auf typische Logos/Icons geprüft.
+  if(d.image?.url)add(d.image.url);
+  const imgs=[...new Set(candidates)].slice(0,8);
+  return{title:d.title||"",desc:(d.description||"").slice(0,600),bullets:[].concat(d.bl||[]).map(t=>String(t).trim().slice(0,300)).filter(t=>t.length>8).slice(0,8),imgs};
 }
 const enq=new Set();let chain=Promise.resolve();
 function enrich(lid,it){
   if(enq.has(it.id))return;enq.add(it.id);
   chain=chain.then(async()=>{const r=doc(db,"lists",lid,"items",it.id);
-    try{const g=await grab(it.link),u={enriched:true},have=(it.imgs||[]).length;
+    try{const g=await grab(it.link),u={enriched:true};
       if(!it.desc&&g.desc)u.desc=g.desc;
       if(!(it.bullets||[]).length&&g.bullets.length)u.bullets=g.bullets;
-      if(!have){const l=[...new Set([...(it.img?[it.img]:[]),...g.imgs])].slice(0,8);if(l.length){u.imgs=l;u.img=l[0]}}
+      if(g.imgs.length){
+        const existing=[...(it.imgs||[]),it.img||""].map(x=>String(x||"").trim()).filter(x=>x.startsWith("data:image/")||goodProductImage(x));
+        const merged=[...new Set([...existing,...g.imgs])].slice(0,8);
+        if(merged.length){u.imgs=merged;u.img=merged[0]}
+      }
       await updateDoc(r,u)}
     catch{try{await updateDoc(r,{enriched:true})}catch{}}
     await new Promise(r=>setTimeout(r,1200))});
