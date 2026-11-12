@@ -313,23 +313,8 @@ function goodProductImage(raw){
   if(/(?:^|[?&])(?:width|w|size)=(?:1|16|20|24|32|48|64)(?:&|$)/i.test(u.href))return "";
   return u.href;
 }
-function isAmazonProductUrl(value){
-  try{const u=new URL(value);return /(^|\.)amazon\.[a-z.]+$/.test(u.hostname)||["amzn.eu","amzn.to","a.co"].includes(u.hostname)}catch{return false}
-}
 async function grab(l){
-  // Amazon zuerst direkt über eine kostenlose Cloudflare Pages Function abrufen.
-  // Dadurch verbraucht die Amazon-Erkennung kein Microlink-Tageskontingent.
-  if(isAmazonProductUrl(l)){
-    let response,data;
-    try{
-      response=await fetch("/api/product?url="+encodeURIComponent(l),{headers:{Accept:"application/json"}});
-      data=await response.json();
-    }catch{throw new Error("Der kostenlose Amazon-Abruf ist gerade nicht erreichbar.")}
-    if(!response.ok||!data?.ok)throw new Error(data?.message||"Amazon-Daten konnten nicht abgerufen werden.");
-    return data.data;
-  }
-  // Andere Shops verwenden weiterhin Microlink. Nur ein Abruf, damit das
-  // kostenlose Tageslimit nicht durch einen automatischen Doppelversuch verfällt.
+  // GitHub Pages ist statisch: Die Erkennung läuft über den vorhandenen Abrufdienst.
   const e=encodeURIComponent,base="https://api.microlink.io/?url="+e(l);
   const fields=[
     ["bl.selectorAll","#feature-bullets li span.a-list-item"],["bl.attr","text"],
@@ -347,8 +332,8 @@ async function grab(l){
   let j;try{j=await response.json()}catch{throw new Error("Der Abrufdienst hat keine gültige Antwort geliefert.")}
   if(!response.ok||j.status!=="success"||!j.data){
     const code=j?.code||"UNKNOWN";
-    if(code==="ERATE")throw new Error("Das kostenlose Tageslimit der Bilderkennung ist erreicht. Bitte morgen erneut versuchen.");
-    if(code==="EPROXYNEEDED")throw new Error("Dieser Shop blockiert den kostenlosen Abrufdienst.");
+    if(code==="ERATE")throw new Error("Das kostenlose Tageslimit der Bilderkennung ist erreicht. Bitte später erneut versuchen.");
+    if(code==="EPROXYNEEDED")throw new Error("Der Shop blockiert den kostenlosen Abrufdienst. Eine automatische Erkennung ist hier gerade nicht möglich.");
     throw new Error("Der Shop konnte nicht ausgelesen werden ("+code+").");
   }
   const d=j.data,candidates=[];
