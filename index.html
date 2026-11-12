@@ -327,9 +327,19 @@ async function grab(l){
     ["prod.selectorAll",'[itemprop="image"]'],["prod.attr","content"]
   ];
   const q=base+"&"+fields.map(x=>"data."+x[0]+"="+e(x[1])).join("&");
-  const response=await fetch(q,{headers:{Accept:"application/json"}});
-  if(!response.ok)throw new Error("Produktdaten konnten nicht abgerufen werden");
-  const j=await response.json();if(j.status!=="success"||!j.data)throw new Error("Keine Produktdaten gefunden");
+  let j;
+  try{
+    const response=await fetch(q,{headers:{Accept:"application/json"}});
+    if(!response.ok)throw new Error("Erweiterter Abruf fehlgeschlagen");
+    j=await response.json();
+    if(j.status!=="success"||!j.data)throw new Error("Keine erweiterten Produktdaten");
+  }catch{
+    // Fallback: einfacher Metadatenabruf, falls einzelne Shop-Selektoren scheitern.
+    const response=await fetch(base,{headers:{Accept:"application/json"}});
+    if(!response.ok)throw new Error("Produktdaten konnten nicht abgerufen werden");
+    j=await response.json();
+    if(j.status!=="success"||!j.data)throw new Error("Keine Produktdaten gefunden");
+  }
   const d=j.data,candidates=[];
   const add=(v)=>{for(const x of imageCandidates(v,[])){const u=goodProductImage(x);if(u)candidates.push(u)}};
   // Amazon: alle Varianten aus dem dynamischen Bildobjekt statt nur dem ersten Schlüssel.
@@ -359,7 +369,7 @@ function enrich(lid,it){
         if(merged.length){u.imgs=merged;u.img=merged[0]}
       }
       await updateDoc(r,u)}
-    catch{try{await updateDoc(r,{enriched:true})}catch{}}
+    catch{ /* Bei einem Abruffehler nicht als erledigt markieren: Beim nächsten Laden erneut versuchen. */ }
     await new Promise(r=>setTimeout(r,1200))});
 }
 
