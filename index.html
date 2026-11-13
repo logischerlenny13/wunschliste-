@@ -239,7 +239,7 @@ function listView(id){
     ${v.length?`<div class="grid">${v.map(i=>card(i,own)).join("")}</div>`:`<div class="empty">${items.length?"Nichts gefunden. Ändere die Filter.":own?"Noch leer. Füge deinen ersten Wunsch hinzu.":"Hier steht noch nichts."}</div>`}`;
     $("#s").value=F.sort;
     if(keep){const q=$("#q");q.focus();q.setSelectionRange(q.value.length,q.value.length)}
-    app._items=items;app._own=own;nudge(!user);if(own)items.filter(x=>x.link&&!x.enriched).forEach(x=>enrich(id,x));
+    app._items=items;app._own=own;nudge(!user);if(own)items.filter(x=>x.link&&(!x.enriched||!(x.imgs?.length||x.img))).forEach(x=>enrich(id,x));
   };
   unsubs.push(onSnapshot(doc(db,"lists",id),s=>{if(!s.exists()){app.innerHTML=top()+`<div class="empty">Diese Liste gibt es nicht.</div>`;return}L={id,...s.data()};paint()}));
   unsubs.push(onSnapshot(collection(db,"lists",id,"items"),s=>{items=s.docs.map(d=>({id:d.id,...d.data()}));paint()}));
@@ -332,7 +332,8 @@ async function grab(l){
   let j;try{j=await response.json()}catch{throw new Error("Der Abrufdienst hat keine gültige Antwort geliefert.")}
   if(!response.ok||j.status!=="success"||!j.data){
     const code=j?.code||"UNKNOWN";
-    if(code==="ERATE")throw new Error("Das kostenlose Tageslimit der Bilderkennung ist erreicht. Bitte später erneut versuchen.");
+    if(code==="ERATE")throw new Error("Das kostenlose Tageslimit von 25 Produktabrufen ist erreicht. Bitte morgen erneut versuchen.");
+    if(code==="ECONCURRENCY")throw new Error("Gerade laufen zu viele Bilderkennungen gleichzeitig. Bitte kurz warten und erneut versuchen.");
     if(code==="EPROXYNEEDED")throw new Error("Der Shop blockiert den kostenlosen Abrufdienst. Eine automatische Erkennung ist hier gerade nicht möglich.");
     throw new Error("Der Shop konnte nicht ausgelesen werden ("+code+").");
   }
@@ -419,7 +420,39 @@ function askBuy(i){
 }
 
 function itemDlg(it=null,lid=app._lid){
-  const ed=!!it;let imgs=[...(it?.imgs?.length?it.imgs:it?.img?[it.img]:[])];
+  const ed=!!it;
+  if(!ed){
+    dlg.className="";
+    dlg.innerHTML=\`<h2>Wunsch hinzufügen</h2><p class="mut">Füge den Produktlink und den Preis ein. Name, Beschreibung und Bilder werden automatisch gesucht.</p>
+      <form id="quickAdd">
+        <label for="quickLink">Produktlink</label><input id="quickLink" type="url" inputmode="url" placeholder="https://…" required>
+        <label for="quickPrice">Preis in Euro</label><input id="quickPrice" type="number" min="0.01" step="0.01" placeholder="z. B. 29,99" required>
+        <div id="quickStatus" class="mut" aria-live="polite"></div>
+        <div class="row" style="justify-content:flex-end;margin-top:1rem"><button type="button" class="ghost" data-a="close">Abbrechen</button><button type="submit" id="quickSave">Hinzufügen</button></div>
+      </form>\`;
+    dlg.showModal();
+    $("#quickAdd").onsubmit=async e=>{
+      e.preventDefault();
+      const lk=normUrl($("#quickLink").value),price=Number($("#quickPrice").value),save=$("#quickSave"),status=$("#quickStatus");
+      if(!lk||!(price>0)||!Number.isFinite(price)){toast("Bitte einen gültigen Link und Preis eingeben.");return}
+      save.disabled=true;save.textContent="Erkennt Produkt …";status.textContent="Produktdaten und Bilder werden gesucht. Das kann kurz dauern.";
+      try{
+        const g=await grab(lk);
+        if(!g.title)throw new Error("Der Shop hat keinen Produktnamen geliefert. Bitte versuche es später erneut.");
+        const imgs=[...new Set(g.imgs)].slice(0,8);
+        await addDoc(collection(db,"lists",lid,"items"),{
+          name:g.title.slice(0,80),link:lk,desc:(g.desc||"").slice(0,600),bullets:g.bullets||[],
+          imgs,img:imgs[0]||"",score:3,price,qty:1,bought:0,collected:0,goal:0,steps:[],pay:"",
+          type:"item",reviewed:false,enriched:true,created:serverTimestamp()
+        });
+        dlg.close();toast(imgs.length?("Hinzugefügt – "+imgs.length+" Bilder gefunden."):"Hinzugefügt. Es wurden noch keine Produktbilder geliefert.");
+      }catch(err){
+        status.textContent=err?.message||"Die Produktdaten konnten gerade nicht abgerufen werden.";
+        save.disabled=false;save.textContent="Erneut versuchen";
+      }
+    };
+    return;
+  }let imgs=[...(it?.imgs?.length?it.imgs:it?.img?[it.img]:[])];
   dlg.className="";
   dlg.innerHTML=`<h2>${ed?"Eintrag bearbeiten":"Eintrag hinzufügen"}</h2><form id="af"><label for="ty">Art</label><select id="ty" ${ed?"disabled":""}><option value="item">Artikel</option><option value="gift">Gutschein</option><option value="group">Gemeinschaftsgeschenk</option></select>
   <label for="nm">Name</label><input id="nm" required maxlength="80">
