@@ -423,13 +423,13 @@ function itemDlg(it=null,lid=app._lid){
   const ed=!!it;
   if(!ed){
     dlg.className="";
-    dlg.innerHTML=\`<h2>Wunsch hinzufügen</h2><p class="mut">Füge den Produktlink und den Preis ein. Name, Beschreibung und Bilder werden automatisch gesucht.</p>
+    dlg.innerHTML=`<h2>Wunsch hinzufügen</h2><p class="mut">Füge den Produktlink und den Preis ein. Name, Beschreibung und Bilder werden automatisch gesucht.</p>
       <form id="quickAdd">
         <label for="quickLink">Produktlink</label><input id="quickLink" type="url" inputmode="url" placeholder="https://…" required>
         <label for="quickPrice">Preis in Euro</label><input id="quickPrice" type="number" min="0.01" step="0.01" placeholder="z. B. 29,99" required>
         <div id="quickStatus" class="mut" aria-live="polite"></div>
         <div class="row" style="justify-content:flex-end;margin-top:1rem"><button type="button" class="ghost" data-a="close">Abbrechen</button><button type="submit" id="quickSave">Hinzufügen</button></div>
-      </form>\`;
+      </form>`;
     dlg.showModal();
     $("#quickAdd").onsubmit=async e=>{
       e.preventDefault();
@@ -452,7 +452,8 @@ function itemDlg(it=null,lid=app._lid){
       }
     };
     return;
-  }let imgs=[...(it?.imgs?.length?it.imgs:it?.img?[it.img]:[])];
+  }
+  let imgs=[...(it?.imgs?.length?it.imgs:it?.img?[it.img]:[])];
   dlg.className="";
   dlg.innerHTML=`<h2>${ed?"Eintrag bearbeiten":"Eintrag hinzufügen"}</h2><form id="af"><label for="ty">Art</label><select id="ty" ${ed?"disabled":""}><option value="item">Artikel</option><option value="gift">Gutschein</option><option value="group">Gemeinschaftsgeschenk</option></select>
   <label for="nm">Name</label><input id="nm" required maxlength="80">
