@@ -313,8 +313,11 @@ function goodProductImage(raw){
   if(/(?:^|[?&])(?:width|w|size)=(?:1|16|20|24|32|48|64)(?:&|$)/i.test(u.href))return "";
   return u.href;
 }
-async function grab(l){
-  // GitHub Pages ist statisch: Die Erkennung läuft über den vorhandenen Abrufdienst.
+// LinkPreview-Schlüssel hier nach dem Erneuern eintragen. Nicht den bereits geteilten Schlüssel weiterverwenden.
+const LINKPREVIEW_API_KEY="NEUEN_LINKPREVIEW_SCHLUESSEL_HIER_EINTRAGEN";
+const previewCache=new Map();
+
+async function grabMicrolink(l){
   const e=encodeURIComponent,base="https://api.microlink.io/?url="+e(l);
   const fields=[
     ["bl.selectorAll","#feature-bullets li span.a-list-item"],["bl.attr","text"],
@@ -329,13 +332,13 @@ async function grab(l){
   ];
   const q=base+"&"+fields.map(x=>"data."+x[0]+"="+e(x[1])).join("&");
   const response=await fetch(q,{headers:{Accept:"application/json"}});
-  let j;try{j=await response.json()}catch{throw new Error("Der Abrufdienst hat keine gültige Antwort geliefert.")}
+  let j;try{j=await response.json()}catch{throw new Error("Microlink lieferte keine gültige Antwort.")}
   if(!response.ok||j.status!=="success"||!j.data){
     const code=j?.code||"UNKNOWN";
-    if(code==="ERATE")throw new Error("Das kostenlose Tageslimit von 25 Produktabrufen ist erreicht. Bitte morgen erneut versuchen.");
-    if(code==="ECONCURRENCY")throw new Error("Gerade laufen zu viele Bilderkennungen gleichzeitig. Bitte kurz warten und erneut versuchen.");
-    if(code==="EPROXYNEEDED")throw new Error("Der Shop blockiert den kostenlosen Abrufdienst. Eine automatische Erkennung ist hier gerade nicht möglich.");
-    throw new Error("Der Shop konnte nicht ausgelesen werden ("+code+").");
+    if(code==="ERATE")throw new Error("Das kostenlose Microlink-Tageslimit ist erreicht.");
+    if(code==="ECONCURRENCY")throw new Error("Zu viele Abrufe gleichzeitig. Bitte kurz warten.");
+    if(code==="EPROXYNEEDED")throw new Error("Der Shop blockiert den Abrufdienst.");
+    throw new Error("Microlink-Fehler ("+code+").");
   }
   const d=j.data,candidates=[];
   const add=(v)=>{for(const x of imageCandidates(v,[])){const u=goodProductImage(x);if(u)candidates.push(u)}};
@@ -344,7 +347,35 @@ async function grab(l){
   add(d.th);add(d.th2);add(d.src);
   for(const raw of [].concat(d.ld||[])){try{const parsed=typeof raw==="string"?JSON.parse(raw):raw;candidates.unshift(...productJsonImages(parsed,[]).map(goodProductImage).filter(Boolean))}catch{}}
   add(d.prod);add(d.og);add(d.tw);if(d.image?.url)add(d.image.url);
-  return{title:d.title||"",desc:(d.description||"").slice(0,600),bullets:[].concat(d.bl||[]).map(t=>String(t).trim().slice(0,300)).filter(t=>t.length>8).slice(0,8),imgs:[...new Set(candidates)].slice(0,8)};
+  return{title:d.title||"",desc:(d.description||"").slice(0,600),bullets:[].concat(d.bl||[]).map(t=>String(t).trim().slice(0,300)).filter(t=>t.length>8).slice(0,8),imgs:[...new Set(candidates)].slice(0,8),provider:"Microlink"};
+}
+
+async function grab(l){
+  const key=normUrl(l);
+  if(previewCache.has(key))return{...previewCache.get(key),cached:true};
+  let lpError=null;
+  if(LINKPREVIEW_API_KEY&&!LINKPREVIEW_API_KEY.startsWith("NEUEN_")){
+    try{
+      const response=await fetch("https://api.linkpreview.net/?q="+encodeURIComponent(l),{
+        method:"GET",headers:{"X-Linkpreview-Api-Key":LINKPREVIEW_API_KEY,Accept:"application/json"}
+      });
+      let d;try{d=await response.json()}catch{throw new Error("Ungültige LinkPreview-Antwort.")};
+      if(!response.ok||d.error||(!d.title&&!d.image))throw new Error("LinkPreview-Fehler "+(d.error||response.status||"ohne Produktdaten"));
+      const image=goodProductImage(d.image||"");
+      if(!d.title||!image)throw new Error("LinkPreview lieferte keine vollständigen Produktdaten.");
+      const result={title:String(d.title).slice(0,120),desc:String(d.description||"").slice(0,600),bullets:[],imgs:[image],provider:"LinkPreview"};
+      previewCache.set(key,result);return result;
+    }catch(err){lpError=err}
+  }else{
+    lpError=new Error("LinkPreview-Schlüssel fehlt noch.");
+  }
+  try{
+    const result=await grabMicrolink(l);
+    result.provider=LINKPREVIEW_API_KEY&&!LINKPREVIEW_API_KEY.startsWith("NEUEN_")?"Microlink (Fallback)":"Microlink (LinkPreview noch nicht eingerichtet)";
+    previewCache.set(key,result);return result;
+  }catch(err){
+    throw new Error((lpError?.message||"LinkPreview nicht verfügbar.")+" Auch Microlink konnte den Shop nicht auslesen: "+(err?.message||"unbekannter Fehler"));
+  }
 }
 const enq=new Set();let chain=Promise.resolve();
 function enrich(lid,it){
@@ -435,17 +466,18 @@ function itemDlg(it=null,lid=app._lid){
       e.preventDefault();
       const lk=normUrl($("#quickLink").value),price=Number($("#quickPrice").value),save=$("#quickSave"),status=$("#quickStatus");
       if(!lk||!(price>0)||!Number.isFinite(price)){toast("Bitte einen gültigen Link und Preis eingeben.");return}
-      save.disabled=true;save.textContent="Erkennt Produkt …";status.textContent="Produktdaten und Bilder werden gesucht. Das kann kurz dauern.";
+      save.disabled=true;save.textContent="Erkennt Produkt …";status.textContent="LinkPreview wird zuerst versucht; bei Problemen springt Microlink ein.";
       try{
         const g=await grab(lk);
         if(!g.title)throw new Error("Der Shop hat keinen Produktnamen geliefert. Bitte versuche es später erneut.");
         const imgs=[...new Set(g.imgs)].slice(0,8);
+        status.textContent="Produktdaten gefunden mit "+g.provider+".";
         await addDoc(collection(db,"lists",lid,"items"),{
           name:g.title.slice(0,80),link:lk,desc:(g.desc||"").slice(0,600),bullets:g.bullets||[],
           imgs,img:imgs[0]||"",score:3,price,qty:1,bought:0,collected:0,goal:0,steps:[],pay:"",
           type:"item",reviewed:false,enriched:true,imagesChecked:true,created:serverTimestamp()
         });
-        dlg.close();toast(imgs.length?("Hinzugefügt – "+imgs.length+" Bilder gefunden."):"Hinzugefügt. Es wurden noch keine Produktbilder geliefert.");
+        dlg.close();toast("Hinzugefügt – Datenquelle: "+g.provider+(imgs.length?" · "+imgs.length+" Bild(er)":""));
       }catch(err){
         status.textContent=err?.message||"Die Produktdaten konnten gerade nicht abgerufen werden.";
         save.disabled=false;save.textContent="Erneut versuchen";
@@ -487,7 +519,7 @@ function itemDlg(it=null,lid=app._lid){
       if(g.desc&&!$("#ds").value)$("#ds").value=g.desc;
       if(g.bullets.length&&!$("#bl").value)$("#bl").value=g.bullets.join("\n");
       imgs=[...new Set([...imgs,...g.imgs])].slice(0,8);draw();
-      toast("Daten übernommen. Wird vom Admin geprüft.")}
+      toast("Daten übernommen ("+g.provider+"). Wird vom Admin geprüft.")}
     catch(err){toast(err?.message||"Aus diesem Link ging das nicht. Trage es bitte selbst ein.")}
     b.disabled=false;b.textContent="Automatisch ausfüllen"};
   $("#af").onsubmit=async e=>{e.preventDefault();
