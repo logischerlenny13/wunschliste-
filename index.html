@@ -239,7 +239,7 @@ function listView(id){
     ${v.length?`<div class="grid">${v.map(i=>card(i,own)).join("")}</div>`:`<div class="empty">${items.length?"Nichts gefunden. Ändere die Filter.":own?"Noch leer. Füge deinen ersten Wunsch hinzu.":"Hier steht noch nichts."}</div>`}`;
     $("#s").value=F.sort;
     if(keep){const q=$("#q");q.focus();q.setSelectionRange(q.value.length,q.value.length)}
-    app._items=items;app._own=own;nudge(!user);if(own)items.filter(x=>x.link&&(!x.enriched||!(x.imgs?.length||x.img))).forEach(x=>enrich(id,x));
+    app._items=items;app._own=own;nudge(!user);if(own)items.filter(x=>x.link&&(!x.enriched||!x.imagesChecked)).forEach(x=>enrich(id,x));
   };
   unsubs.push(onSnapshot(doc(db,"lists",id),s=>{if(!s.exists()){app.innerHTML=top()+`<div class="empty">Diese Liste gibt es nicht.</div>`;return}L={id,...s.data()};paint()}));
   unsubs.push(onSnapshot(collection(db,"lists",id,"items"),s=>{items=s.docs.map(d=>({id:d.id,...d.data()}));paint()}));
@@ -350,7 +350,7 @@ const enq=new Set();let chain=Promise.resolve();
 function enrich(lid,it){
   if(enq.has(it.id))return;enq.add(it.id);
   chain=chain.then(async()=>{const r=doc(db,"lists",lid,"items",it.id);
-    try{const g=await grab(it.link),u={enriched:true};
+    try{const g=await grab(it.link),u={enriched:true,imagesChecked:true};
       if(!it.desc&&g.desc)u.desc=g.desc;
       if(!(it.bullets||[]).length&&g.bullets.length)u.bullets=g.bullets;
       if(g.imgs.length){
@@ -443,7 +443,7 @@ function itemDlg(it=null,lid=app._lid){
         await addDoc(collection(db,"lists",lid,"items"),{
           name:g.title.slice(0,80),link:lk,desc:(g.desc||"").slice(0,600),bullets:g.bullets||[],
           imgs,img:imgs[0]||"",score:3,price,qty:1,bought:0,collected:0,goal:0,steps:[],pay:"",
-          type:"item",reviewed:false,enriched:true,created:serverTimestamp()
+          type:"item",reviewed:false,enriched:true,imagesChecked:true,created:serverTimestamp()
         });
         dlg.close();toast(imgs.length?("Hinzugefügt – "+imgs.length+" Bilder gefunden."):"Hinzugefügt. Es wurden noch keine Produktbilder geliefert.");
       }catch(err){
